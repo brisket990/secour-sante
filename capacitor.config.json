@@ -1,6 +1,6 @@
 {
   "appId": "com.secoursante.app",
-  "appName": "SecourSanté",
+  "appName": "RéaDirect",
   "webDir": "public",
   "server": {
     "url": "http://localhost:3000",

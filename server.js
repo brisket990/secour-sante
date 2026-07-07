@@ -135,9 +135,9 @@ app.post('/api/contact', (req, res) => {
   );
   if (transporter) {
     transporter.sendMail({
-      from: `"Formulaire SecourSanté" <${process.env.SMTP_USER || 'noreply@secoursante.app'}>`,
+      from: `"Formulaire RéaDirect" <${process.env.SMTP_USER || 'noreply@readirect.app'}>`,
       to: MAIL_TO,
-      subject: `[SecourSanté] ${subject || 'Nouveau message de ' + name}`,
+      subject: `[RéaDirect] ${subject || 'Nouveau message de ' + name}`,
       text: `De: ${name} (${email})\nSujet: ${subject}\n\n${message}`,
     }).catch(() => {});
   }
@@ -172,7 +172,7 @@ app.delete('/api/services/:id', requireAuth, (req, res) => {
 
 initialize().then(() => {
   app.listen(PORT, () => {
-    console.log(`SecourSante démarré sur http://localhost:${PORT}`);
+    console.log(`RéaDirect démarré sur http://localhost:${PORT}`);
   });
 }).catch(err => {
   console.error('Erreur d\'initialisation:', err);
