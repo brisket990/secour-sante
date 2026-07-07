@@ -40,7 +40,7 @@ async function _queryTurso(sql, params = []) {
   const result = await _db.execute({ sql, args: params });
   const isSelect = sql.trim().toUpperCase().startsWith('SELECT') || sql.trim().toUpperCase().startsWith('WITH');
   if (isSelect) return result.rows;
-  return { lastInsertRowid: result.lastInsertRowid, changes: result.rowsAffected };
+  return { lastInsertRowid: Number(result.lastInsertRowid), changes: result.rowsAffected };
 }
 
 async function _createTablesTurso() {

@@ -5,6 +5,9 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { initialize, get, all, run, reseed } = require('./database');
 
+// Fix BigInt serialization for Turso
+BigInt.prototype.toJSON = function() { return Number(this); };
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
