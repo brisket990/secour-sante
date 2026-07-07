@@ -15,7 +15,12 @@ async function checkAuth() {
     userInfo = me.user || null;
     hideAuth();
     updateAdminUI();
+    loadHospitals();
   } catch { logout(); }
+}
+
+function confirmLogout() {
+  if (confirm('Se déconnecter ?')) logout();
 }
 
 function normalize(str) {
@@ -97,6 +102,7 @@ async function doLogin() {
     closeLogin();
     hideAuth();
     updateAdminUI();
+    loadHospitals();
     if (selectedId) selectHospital(selectedId);
   } catch {
     document.getElementById('loginError').classList.remove('hidden');
@@ -151,6 +157,7 @@ async function doLoginUser(e) {
     userInfo = res.user;
     hideAuth();
     updateAdminUI();
+    loadHospitals();
   } catch (err) {
     document.getElementById('loginError').textContent = err.message;
     document.getElementById('loginError').classList.remove('hidden');
@@ -168,6 +175,7 @@ async function doLoginAdmin(e) {
     userInfo = null;
     hideAuth();
     updateAdminUI();
+    loadHospitals();
   } catch (err) {
     document.getElementById('adminLoginError').textContent = err.message;
     document.getElementById('adminLoginError').classList.remove('hidden');
