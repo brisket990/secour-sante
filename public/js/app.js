@@ -207,14 +207,16 @@ function updateAdminUI() {
   document.getElementById('navCandidatures').classList.toggle('hidden', !admin);
   if (admin) { loadInboxCount(); loadCandidaturesCount(); }
 
-  // User info in sidebar footer
+  // User info button in sidebar footer
   const ui = document.getElementById('userInfo');
   const un = document.getElementById('userInfoName');
   if (authToken && !admin && userInfo) {
     ui.classList.remove('hidden');
-    un.textContent = `${userInfo.prenom} ${userInfo.nom} (${userInfo.smur})`;
+    ui.style.display = 'flex';
+    un.textContent = `${userInfo.prenom} ${userInfo.nom}`;
   } else {
     ui.classList.add('hidden');
+    ui.style.display = 'none';
   }
 }
 

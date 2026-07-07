@@ -101,8 +101,6 @@ body.dark .logo-icon { color: var(--primary-dark); }
 .admin-btn:hover { background: rgba(0,0,0,0.3); color: white; }
 .admin-btn.active { color: var(--green); border-color: var(--green); }
 .sidebar-version { font-size: 0.6rem; color: rgba(255,255,255,0.4); text-align: center; display: block; margin-top: 0.5rem; }
-.user-info { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; margin-bottom: 0.5rem; padding: 0.4rem 0.5rem; background: rgba(255,255,255,0.08); border-radius: var(--radius); text-align: center; }
-.user-info-name { font-size: 0.7rem; opacity: 0.85; word-break: break-word; }
 
 .main-wrapper { margin-left: 260px; flex: 1; display: flex; flex-direction: column; }
 
