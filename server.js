@@ -16,10 +16,10 @@ const userTokens = new Map(); // token -> { nom, prenom, email, smur, role }
 
 function requireAuth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token || !tokens.has(token)) {
-    return res.status(401).json({ error: 'Non autorisé' });
-  }
-  next();
+  if (!token) return res.status(401).json({ error: 'Non autorisé' });
+  if (tokens.has(token)) return next();
+  if (userTokens.has(token) && userTokens.get(token).role === 'admin') return next();
+  res.status(401).json({ error: 'Non autorisé' });
 }
 
 function requireAnyAuth(req, res, next) {
