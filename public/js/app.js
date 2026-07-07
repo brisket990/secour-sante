@@ -481,20 +481,18 @@ async function loadUsers() {
         <span class="badge-status ${u.status}">${u.status}</span>
       </div>
       <div class="inbox-actions" style="flex-wrap:wrap">
-        <select class="status-select" onchange="updateUserStatus(${u.id}, this.value)" ${u.role === 'admin' ? 'disabled' : ''}>
-          <option value="pending" ${u.status === 'pending' ? 'selected' : ''}>En attente</option>
-          <option value="approved" ${u.status === 'approved' ? 'selected' : ''}>Approuvé</option>
-          <option value="rejected" ${u.status === 'rejected' ? 'selected' : ''}>Rejeté</option>
+        <select class="status-select" onchange="updateUserRole(${u.id}, this.value)">
+          <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+          <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
         </select>
-        <button class="btn btn-sm btn-outline" onclick="if(confirm('Promouvoir ${esc(u.prenom)} ${esc(u.nom)} en administrateur ?')) promoteUser(${u.id})" ${u.role === 'admin' ? 'disabled' : ''}>👑 Admin</button>
         <button class="btn btn-sm btn-danger" onclick="if(confirm('Supprimer définitivement ${esc(u.prenom)} ${esc(u.nom)} ?')) deleteUser(${u.id})">🗑️ Supprimer</button>
       </div>
     </div>
   `).join('');
 }
 
-async function updateUserStatus(id, status) {
-  await api(`/api/users/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
+async function updateUserRole(id, role) {
+  await api(`/api/users/${id}/role`, { method: 'PUT', body: JSON.stringify({ role }) });
   loadUsers();
   loadCandidatures();
   loadCandidaturesCount();

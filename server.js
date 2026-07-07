@@ -89,6 +89,21 @@ app.put('/api/users/:id/status', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+app.put('/api/users/:id/role', requireAuth, async (req, res) => {
+  const { role } = req.body;
+  if (!['user', 'admin'].includes(role)) {
+    return res.status(400).json({ error: 'Rôle invalide' });
+  }
+  const user = await get('SELECT email FROM users WHERE id = ?', [req.params.id]);
+  if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  await run("UPDATE users SET role = ?, status = 'approved' WHERE id = ?", [role, req.params.id]);
+  // Invalidate existing session so user reconnects with new role
+  for (const [token, info] of userTokens) {
+    if (info.email === user.email) userTokens.delete(token);
+  }
+  res.json({ success: true });
+});
+
 app.put('/api/users/:id/approve', requireAuth, async (req, res) => {
   await run('UPDATE users SET status = ? WHERE id = ?', ['approved', req.params.id]);
   res.json({ success: true });
