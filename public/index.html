@@ -3,84 +3,173 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SecourSanté - Annuaire AP-HP</title>
+  <title>SecourSanté - Annuaire Réanimation</title>
   <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Barre APHP -->
-  <div class="header-top">
-    <span>Assistance Publique - Hôpitaux de Paris</span>
-    <div class="header-top-links">
-      <a href="https://www.aphp.fr" target="_blank">aphp.fr</a>
-      <a href="https://mon.aphp.fr" target="_blank">mon AP-HP</a>
-    </div>
-  </div>
-
-  <!-- En-tête -->
-  <div class="header-main">
-    <div class="brand">
-      <div class="brand-icon">SS</div>
-      <div class="brand-text">
-        <h1>SecourSanté</h1>
-        <small>Annuaire des services de réanimation</small>
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">SS</div>
+        <div class="logo-text">
+          <span class="logo-title">SecourSanté</span>
+          <span class="logo-sub">Annuaire Réanimation</span>
+        </div>
       </div>
     </div>
-    <div class="header-actions">
-      <span id="adminStatus" class="admin-badge hidden">Admin</span>
-      <button id="adminToggle" class="admin-btn" onclick="toggleAdmin()">🔑 Admin</button>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" href="#" onclick="return showView('hospitals')">
+        <span class="nav-icon">🏥</span>
+        <span>Hôpitaux</span>
+        <span class="nav-badge" id="hospitalCount">0</span>
+      </a>
+      <a class="nav-item" href="#" onclick="return showView('recherche')">
+        <span class="nav-icon">🔍</span>
+        <span>Recherche rapide</span>
+      </a>
+      <a class="nav-item" href="#" onclick="return showView('infos')">
+        <span class="nav-icon">ℹ️</span>
+        <span>À propos</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="adminToggle" class="admin-btn" onclick="toggleAdmin()">
+        <span class="nav-icon">🔒</span>
+        <span id="adminText">Admin</span>
+      </button>
+      <span class="sidebar-version">v1.0</span>
     </div>
+  </aside>
+
+  <!-- Overlay for mobile -->
+  <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Main -->
+  <div class="main-wrapper">
+    <!-- Top bar -->
+    <header class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Rechercher un hôpital, un service..." oninput="searchHospitals()">
+      </div>
+      <div class="topbar-actions">
+        <span id="adminBadge" class="admin-badge hidden">Admin</span>
+        <button class="btn btn-primary btn-sm" id="addBtn" onclick="showHospitalModal()" style="display:none">+ Ajouter</button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main>
+      <!-- Vue Hôpitaux -->
+      <div id="view-hospitals" class="view active">
+        <div class="view-header">
+          <h2>Hôpitaux</h2>
+          <p id="subtitleHospitals">Sélectionnez un hôpital pour voir ses services</p>
+        </div>
+        <div class="content-split">
+          <div class="panel panel-list" id="hospitalList"></div>
+          <div class="panel panel-detail" id="hospitalDetail">
+            <div class="empty-detail">
+              <div class="empty-icon">🏥</div>
+              <h3>Sélectionnez un hôpital</h3>
+              <p>Cliquez sur un hôpital dans la liste pour voir ses services et informations</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vue Recherche -->
+      <div id="view-recherche" class="view">
+        <div class="view-header">
+          <h2>Recherche rapide</h2>
+          <p>Tapez un service, un étage, un mot-clé...</p>
+        </div>
+        <div class="quick-search">
+          <input type="text" id="quickSearchInput" placeholder="Ex: SAMU, Réanimation, Urgences, 3e étage..." oninput="quickSearch()">
+        </div>
+        <div id="quickResults" class="quick-results"></div>
+      </div>
+
+      <!-- Vue Infos -->
+      <div id="view-infos" class="view">
+        <div class="view-header">
+          <h2>À propos</h2>
+        </div>
+        <div class="about-card">
+          <div class="about-logo">🚑</div>
+          <h3>SecourSanté</h3>
+          <p>Annuaire des services hospitaliers destiné aux ambulances de réanimation et aux services d'urgence.</p>
+          <p>Retrouvez rapidement les informations essentielles : adresse, services, étages, contacts directs.</p>
+          <div class="about-features">
+            <div class="feature"><span class="feature-icon">📍</span> Navigation GPS intégrée</div>
+            <div class="feature"><span class="feature-icon">🔄</span> Données modifiables en temps réel</div>
+            <div class="feature"><span class="feature-icon">📱</span> Application mobile (bientôt)</div>
+          </div>
+          <hr>
+          <p style="font-size:0.85rem;color:#94a3b8">Développé pour les équipes AP-HP</p>
+        </div>
+      </div>
+    </main>
   </div>
 
-  <!-- Barre d'outils -->
-  <div class="toolbar">
-    <input type="text" id="searchInput" placeholder="Rechercher un hôpital, un service..." oninput="searchHospitals()">
-    <button id="addHospitalBtn" class="btn btn-primary hidden" onclick="showHospitalModal()">+ Ajouter un hôpital</button>
-  </div>
-
-  <!-- Contenu -->
-  <main>
-    <div id="hospitalList" class="hospital-list"></div>
-    <div id="hospitalDetail" class="hospital-detail hidden"></div>
-  </main>
-
-  <!-- Footer -->
-  <footer>
-    <strong>SecourSanté</strong> — Outil interne pour ambulances de réanimation · <a href="https://www.aphp.fr" style="color:rgba(255,255,255,0.7)">AP-HP</a>
-  </footer>
-
-  <!-- Login overlay -->
+  <!-- Login Modal -->
   <div id="loginOverlay" class="login-overlay hidden">
     <div class="login-box">
-      <div class="lock-icon">🔒</div>
+      <div class="login-icon">🔒</div>
       <h2>Accès administrateur</h2>
-      <p>Entrez le mot de passe pour modifier les données</p>
-      <input type="password" id="loginPassword" placeholder="Mot de passe" onkeydown="if(event.key==='Enter') doLogin()">
-      <p id="loginError" class="error">Mot de passe incorrect</p>
-      <div style="margin-top:1rem;display:flex;gap:0.5rem;justify-content:center">
+      <p>Mot de passe requis pour modifier les données</p>
+      <div class="login-input-wrap">
+        <input type="password" id="loginPassword" placeholder="Mot de passe" onkeydown="if(event.key==='Enter') doLogin()" autocomplete="off">
+      </div>
+      <p id="loginError" class="login-error hidden">Mot de passe incorrect</p>
+      <div class="login-actions">
         <button class="btn btn-secondary" onclick="closeLogin()">Annuler</button>
-        <button class="btn btn-primary" onclick="doLogin()">Se connecter</button>
+        <button class="btn btn-primary" onclick="doLogin()">Connexion</button>
       </div>
     </div>
   </div>
 
   <!-- Modal Hôpital -->
   <div id="hospitalModal" class="modal hidden">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('hospitalModal')">&times;</span>
-      <h2 id="hospitalModalTitle">Ajouter un hôpital</h2>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="hospitalModalTitle">Ajouter un hôpital</h2>
+        <button class="modal-close" onclick="closeModal('hospitalModal')">&times;</button>
+      </div>
       <form id="hospitalForm" onsubmit="saveHospital(event)">
         <input type="hidden" id="hId">
-        <label>Nom de l'hôpital *</label>
-        <input type="text" id="hName" required>
-        <label>Adresse *</label>
-        <input type="text" id="hAddress" required>
-        <label>Téléphone</label>
-        <input type="text" id="hPhone">
-        <label>Latitude</label>
-        <input type="number" step="any" id="hLat">
-        <label>Longitude</label>
-        <input type="number" step="any" id="hLng">
-        <div class="modal-actions">
+        <div class="form-group">
+          <label>Nom de l'hôpital *</label>
+          <input type="text" id="hName" required>
+        </div>
+        <div class="form-group">
+          <label>Adresse *</label>
+          <input type="text" id="hAddress" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input type="text" id="hPhone">
+          </div>
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input type="text" id="hPhone2" placeholder="Optionnel">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Latitude</label>
+            <input type="number" step="any" id="hLat" placeholder="48.8566">
+          </div>
+          <div class="form-group">
+            <label>Longitude</label>
+            <input type="number" step="any" id="hLng" placeholder="2.3522">
+          </div>
+        </div>
+        <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('hospitalModal')">Annuler</button>
           <button type="submit" class="btn btn-primary">Enregistrer</button>
         </div>
@@ -90,21 +179,33 @@
 
   <!-- Modal Service -->
   <div id="serviceModal" class="modal hidden">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('serviceModal')">&times;</span>
-      <h2 id="serviceModalTitle">Ajouter un service</h2>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="serviceModalTitle">Ajouter un service</h2>
+        <button class="modal-close" onclick="closeModal('serviceModal')">&times;</button>
+      </div>
       <form id="serviceForm" onsubmit="saveService(event)">
         <input type="hidden" id="sId">
         <input type="hidden" id="sHospitalId">
-        <label>Nom du service *</label>
-        <input type="text" id="sName" required>
-        <label>Étage / Localisation</label>
-        <input type="text" id="sFloor" placeholder="ex: 3e étage, Pavillon A">
-        <label>Description</label>
-        <textarea id="sDescription" rows="2"></textarea>
-        <label>Téléphone direct</label>
-        <input type="text" id="sPhone">
-        <div class="modal-actions">
+        <div class="form-group">
+          <label>Nom du service *</label>
+          <input type="text" id="sName" required>
+        </div>
+        <div class="form-group">
+          <label>Étage / Localisation</label>
+          <input type="text" id="sFloor" placeholder="ex: 3e étage, Pavillon A">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="sDescription" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Téléphone direct</label>
+            <input type="text" id="sPhone">
+          </div>
+        </div>
+        <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('serviceModal')">Annuler</button>
           <button type="submit" class="btn btn-primary">Enregistrer</button>
         </div>
