@@ -460,9 +460,9 @@ async function rejectUser(id) {
 
 async function promoteUser(id) {
   await api(`/api/users/${id}/promote`, { method: 'PUT' });
-  await api(`/api/users/${id}/approve`, { method: 'PUT' });
   loadCandidatures();
   loadCandidaturesCount();
+  alert('Utilisateur promu administrateur. Il doit se reconnecter pour que le changement prenne effet.');
 }
 
 // ===== MODALS =====

@@ -82,7 +82,13 @@ app.put('/api/users/:id/approve', requireAuth, async (req, res) => {
 });
 
 app.put('/api/users/:id/promote', requireAuth, async (req, res) => {
-  await run("UPDATE users SET role = 'admin' WHERE id = ?", [req.params.id]);
+  const user = await get('SELECT email FROM users WHERE id = ?', [req.params.id]);
+  if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  await run("UPDATE users SET role = 'admin', status = 'approved' WHERE id = ?", [req.params.id]);
+  // Invalidate existing session so user reconnects with admin role
+  for (const [token, info] of userTokens) {
+    if (info.email === user.email) userTokens.delete(token);
+  }
   res.json({ success: true });
 });
 
