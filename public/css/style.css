@@ -71,6 +71,11 @@ body.dark .logo-icon { color: var(--primary-dark); }
 .logo-text { line-height: 1.2; }
 .logo-title { display: block; font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
 .logo-sub { display: block; font-size: 0.65rem; opacity: 0.7; }
+.aphp-badge {
+  font-size: 0.55rem; font-weight: 700; letter-spacing: 0.3px;
+  background: var(--accent); color: #fff; padding: 1px 5px; border-radius: 3px;
+  margin-left: auto; line-height: 1.4;
+}
 
 .sidebar-nav { flex: 1; padding: 1rem 0; }
 .nav-item {

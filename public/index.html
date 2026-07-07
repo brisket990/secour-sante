@@ -16,9 +16,14 @@
           <span class="logo-title">RéaDirect</span>
           <span class="logo-sub">Annuaire Réanimation</span>
         </div>
+        <div class="aphp-badge">AP-HP</div>
       </div>
     </div>
     <nav class="sidebar-nav">
+      <a id="navInbox" class="nav-item hidden" href="#" onclick="return showView('inbox')">
+        <span class="nav-icon">📬</span><span>Messages reçus</span>
+        <span class="nav-badge" id="inboxCount">0</span>
+      </a>
       <a class="nav-item active" href="#" onclick="return showView('hospitals')">
         <span class="nav-icon">🏥</span><span>Hôpitaux</span>
         <span class="nav-badge" id="hospitalCount">0</span>
@@ -31,10 +36,6 @@
       </a>
       <a class="nav-item" href="#" onclick="return showView('contact')">
         <span class="nav-icon">✉️</span><span>Contact</span>
-      </a>
-      <a id="navInbox" class="nav-item hidden" href="#" onclick="return showView('inbox')">
-        <span class="nav-icon">📬</span><span>Messages reçus</span>
-        <span class="nav-badge" id="inboxCount">0</span>
       </a>
       <a class="nav-item" href="#" onclick="return showView('infos')">
         <span class="nav-icon">ℹ️</span><span>À propos</span>
