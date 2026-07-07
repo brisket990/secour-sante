@@ -209,6 +209,7 @@ function updateAdminUI() {
   const admin = isAdmin();
   const loggedIn = !!authToken;
   document.getElementById('adminText').textContent = admin ? 'Admin ✓' : 'Admin';
+  document.getElementById('adminToggle').classList.toggle('active', admin);
   document.getElementById('adminToggle').classList.toggle('hidden', !admin && loggedIn);
   document.getElementById('adminBadge').classList.toggle('hidden', !admin);
   document.getElementById('addBtn').style.display = admin ? '' : 'none';
