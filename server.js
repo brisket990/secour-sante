@@ -8,12 +8,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'localhost',
-  port: process.env.SMTP_PORT || 25,
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-});
-
 const tokens = new Set();
 
 function requireAuth(req, res, next) {
@@ -41,22 +35,6 @@ app.post('/api/logout', (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (token) tokens.delete(token);
   res.json({ success: true });
-});
-
-app.post('/api/contact', async (req, res) => {
-  const { name, email, message } = req.body;
-  try {
-    await transporter.sendMail({
-      from: `"Annuaire SecourSanté" <${process.env.SMTP_USER || 'no-reply@secoursante.com'}>`,
-      to: 'google.stamina231@passmail.com',
-      subject: 'Nouvelle suggestion - SecourSanté',
-      text: `De: ${name} (${email})\n\nMessage: ${message}`
-    });
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Email error:', err);
-    res.status(500).json({ error: 'Erreur d\'envoi' });
-  }
 });
 
 app.get('/api/hospitals', (req, res) => {
