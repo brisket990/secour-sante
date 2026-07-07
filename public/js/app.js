@@ -1,8 +1,22 @@
 let selectedId = null;
 let authToken = localStorage.getItem('token') || null;
 let allHospitals = [];
+let userInfo = null;
+let isAdminUser = false;
 
-function isAdmin() { return !!authToken; }
+function isAdmin() { return isAdminUser; }
+
+async function checkAuth() {
+  if (!authToken) { showAuth(); return; }
+  try {
+    const me = await api('/api/me');
+    if (!me.authed) { logout(); return; }
+    isAdminUser = me.role === 'admin';
+    userInfo = me.user || null;
+    hideAuth();
+    updateAdminUI();
+  } catch { logout(); }
+}
 
 function normalize(str) {
   return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -33,10 +47,11 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
-  const idx = ['inbox','hospitals','grandegarde','recherche','contact','infos'].indexOf(name);
+  const idx = ['inbox','candidatures','hospitals','grandegarde','recherche','contact','infos'].indexOf(name);
   document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
   if (name === 'hospitals') loadHospitals();
   if (name === 'inbox') loadInbox();
+  if (name === 'candidatures') loadCandidatures();
   if (name === 'grandegarde') loadProtocols();
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
@@ -61,8 +76,9 @@ updateDarkUI();
 
 // ===== ADMIN =====
 function toggleAdmin() {
-  if (isAdmin()) { if (confirm('Se déconnecter ?')) logout(); }
-  else {
+  if (isAdmin()) {
+    if (confirm('Se déconnecter ?')) logout();
+  } else {
     document.getElementById('loginOverlay').classList.remove('hidden');
     document.getElementById('loginPassword').value = '';
     document.getElementById('loginError').classList.add('hidden');
@@ -76,32 +92,120 @@ async function doLogin() {
     const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password: document.getElementById('loginPassword').value }) });
     authToken = res.token;
     localStorage.setItem('token', res.token);
+    isAdminUser = true;
+    userInfo = null;
     closeLogin();
+    hideAuth();
     updateAdminUI();
     if (selectedId) selectHospital(selectedId);
-  } catch { document.getElementById('loginError').classList.remove('hidden'); }
+  } catch {
+    document.getElementById('loginError').classList.remove('hidden');
+  }
 }
 
 function logout() {
   if (authToken) api('/api/logout', { method: 'POST' }).catch(() => {});
   authToken = null;
+  isAdminUser = false;
+  userInfo = null;
   localStorage.removeItem('token');
-  updateAdminUI();
-  backToList();
-  loadHospitals();
-  document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3></div>`;
-  selectedId = null;
+  showAuth();
+}
+
+// ===== USER AUTH =====
+function showAuth() {
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('appRoot').classList.add('hidden');
+}
+
+function hideAuth() {
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('appRoot').classList.remove('hidden');
+}
+
+function showAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.add('hidden'));
+  document.querySelectorAll('.auth-error').forEach(e => e.classList.add('hidden'));
+  document.querySelectorAll('.auth-success').forEach(e => e.classList.add('hidden'));
+  if (tab === 'login') {
+    document.getElementById('tabLogin').classList.add('active');
+    document.getElementById('loginForm').classList.remove('hidden');
+  } else if (tab === 'register') {
+    document.getElementById('tabRegister').classList.add('active');
+    document.getElementById('registerForm').classList.remove('hidden');
+  } else if (tab === 'adminLogin') {
+    document.getElementById('adminLoginForm').classList.remove('hidden');
+  }
+}
+
+async function doLoginUser(e) {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  try {
+    const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    authToken = res.token;
+    localStorage.setItem('token', res.token);
+    isAdminUser = false;
+    userInfo = res.user;
+    hideAuth();
+    updateAdminUI();
+  } catch (err) {
+    document.getElementById('loginError').textContent = err.message;
+    document.getElementById('loginError').classList.remove('hidden');
+  }
+}
+
+async function doLoginAdmin(e) {
+  e.preventDefault();
+  const password = document.getElementById('adminPassword').value;
+  try {
+    const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password }) });
+    authToken = res.token;
+    localStorage.setItem('token', res.token);
+    isAdminUser = true;
+    userInfo = null;
+    hideAuth();
+    updateAdminUI();
+  } catch (err) {
+    document.getElementById('adminLoginError').textContent = err.message;
+    document.getElementById('adminLoginError').classList.remove('hidden');
+  }
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  document.querySelectorAll('.auth-error').forEach(el => el.classList.add('hidden'));
+  document.getElementById('registerSuccess').classList.add('hidden');
+  const data = {
+    nom: document.getElementById('regNom').value,
+    prenom: document.getElementById('regPrenom').value,
+    email: document.getElementById('regEmail').value,
+    smur: document.getElementById('regSmur').value,
+    password: document.getElementById('regPassword').value,
+  };
+  try {
+    const res = await api('/api/register', { method: 'POST', body: JSON.stringify(data) });
+    document.getElementById('registerSuccess').textContent = res.message;
+    document.getElementById('registerSuccess').classList.remove('hidden');
+    document.getElementById('registerForm').querySelector('button').disabled = true;
+  } catch (err) {
+    document.getElementById('registerError').textContent = err.message;
+    document.getElementById('registerError').classList.remove('hidden');
+  }
 }
 
 function updateAdminUI() {
   const admin = isAdmin();
-  document.getElementById('adminText').textContent = admin ? 'Admin ✓' : 'Admin';
+  document.getElementById('adminText').textContent = admin ? 'Admin ✓' : (authToken ? 'User' : 'Admin');
   document.getElementById('adminToggle').classList.toggle('active', admin);
   document.getElementById('adminBadge').classList.toggle('hidden', !admin);
   document.getElementById('addBtn').style.display = admin ? '' : 'none';
   document.getElementById('addProtocolBtn').style.display = admin ? '' : 'none';
   document.getElementById('navInbox').classList.toggle('hidden', !admin);
-  if (admin) loadInboxCount();
+  document.getElementById('navCandidatures').classList.toggle('hidden', !admin);
+  if (admin) { loadInboxCount(); loadCandidaturesCount(); }
 }
 
 // ===== HOSPITALS (accent-insensitive) =====
@@ -292,6 +396,46 @@ async function loadInboxCount() {
 }
 async function markRead(id) { await api(`/api/messages/${id}/read`, { method: 'PUT' }); loadInbox(); }
 async function deleteMessage(id) { await api(`/api/messages/${id}`, { method: 'DELETE' }); loadInbox(); }
+
+// ===== CANDIDATURES =====
+async function loadCandidatures() {
+  const users = await api('/api/pending-users');
+  const container = document.getElementById('candidaturesList');
+  if (!users.length) {
+    container.innerHTML = '<div class="empty-state">Aucune candidature en attente</div>';
+    return;
+  }
+  container.innerHTML = users.map(u => `
+    <div class="inbox-item">
+      <h4>${esc(u.prenom)} ${esc(u.nom)}</h4>
+      <div class="inbox-meta"><span>${esc(u.email)}</span><span>${esc(u.smur)}</span></div>
+      <div class="inbox-meta"><span>Inscrit le ${u.created_at}</span></div>
+      <div class="inbox-actions">
+        <button class="btn btn-sm btn-success" onclick="approveUser(${u.id})">✅ Valider</button>
+        <button class="btn btn-sm btn-danger" onclick="if(confirm('Refuser cette candidature ?')) rejectUser(${u.id})">❌ Refuser</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function loadCandidaturesCount() {
+  try {
+    const users = await api('/api/pending-users');
+    document.getElementById('candidaturesCount').textContent = users.length;
+  } catch {}
+}
+
+async function approveUser(id) {
+  await api(`/api/users/${id}/approve`, { method: 'PUT' });
+  loadCandidatures();
+  loadCandidaturesCount();
+}
+
+async function rejectUser(id) {
+  await api(`/api/users/${id}/reject`, { method: 'DELETE' });
+  loadCandidatures();
+  loadCandidaturesCount();
+}
 
 // ===== MODALS =====
 function showHospitalModal(id) {
@@ -502,5 +646,4 @@ async function deleteProtocol(id) {
   loadProtocols();
 }
 
-updateAdminUI();
-loadHospitals();
+checkAuth();
