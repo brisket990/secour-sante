@@ -277,11 +277,73 @@ main { flex: 1; padding: 1.5rem; }
 .feature-icon { font-size: 1.1rem; }
 
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
+  /* Sidebar pleine largeur avec animation */
+  .sidebar { transform: translateX(-100%); width: 280px; transition: transform 0.25s ease; }
   .sidebar.open { transform: translateX(0); }
   .sidebar-overlay.open { display: block; }
   .main-wrapper { margin-left: 0; }
-  .hamburger { display: block; }
-  .content-split { flex-direction: column; }
-  .panel-list { width: 100%; max-height: 300px; }
+
+  /* Topbar compact */
+  .topbar { padding: 0.5rem 0.75rem; }
+  .hamburger { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; font-size: 1.2rem; }
+  .topbar-actions { gap: 0.3rem; }
+
+  /* Contenu */
+  main { padding: 0.75rem; }
+  .view-header { margin-bottom: 0.75rem; }
+  .view-header h2 { font-size: 1.1rem; }
+
+  /* Split → plein écran */
+  .content-split { flex-direction: column; gap: 0; }
+  .panel-list { width: 100%; max-height: none; }
+  .panel-detail { width: 100%; }
+
+  /* Quand un hôpital est sélectionné, on cache la liste et on affiche le détail en plein écran */
+  .panel-list.has-selected { display: none; }
+  .panel-detail.has-selected { display: block; }
+
+  /* Bouton retour mobile */
+  .mobile-back { display: flex !important; }
+
+  /* Services - plus lisibles */
+  .service-card { flex-direction: column; gap: 0.5rem; padding: 0.65rem 0.85rem; }
+  .service-actions { align-self: flex-end; }
+  .badge-floor { font-size: 0.6rem; }
+
+  /* Detail plus aéré */
+  .detail-header { padding: 1rem; }
+  .detail-header h2 { font-size: 1.05rem; }
+  .services-section { padding: 0.75rem 1rem; }
+
+  /* GPS boutons mieux espacés */
+  .detail-gps { flex-wrap: wrap; }
+  .detail-gps .btn { flex: 1; justify-content: center; min-width: 0; text-align: center; font-size: 0.7rem; padding: 0.35rem 0.4rem; }
+
+  /* Cartes hôpital cliquables */
+  .hospital-card { padding: 0.85rem 1rem; }
+  .hospital-card h3 { font-size: 0.9rem; }
+
+  /* Recherche rapide */
+  .quick-search input { font-size: 0.9rem; padding: 0.65rem 0.85rem; }
+
+  /* Modals */
+  .modal-panel { max-width: 100%; margin: 0.5rem; max-height: 95vh; }
+  .form-row { flex-direction: column; gap: 0; }
+
+  /* Inbox */
+  .inbox-card .inbox-meta { flex-direction: column; gap: 0.2rem; }
+
+  /* About */
+  .about-card { padding: 1.25rem; }
+
+  /* Menu hamburger dans la sidebar en mobile */
+  .sidebar .close-sidebar { display: flex; }
+}
+
+/* Desktop: cacher le bouton back mobile */
+.mobile-back { display: none !important; }
+@media (max-width: 768px) {
+  .mobile-back { display: flex !important; align-items: center; gap: 0.3rem;
+    background: none; border: none; color: var(--accent); font-size: 0.85rem;
+    cursor: pointer; padding: 0.4rem 0; font-family: inherit; font-weight: 500; margin-bottom: 0.5rem; }
 }

@@ -78,6 +78,7 @@ function logout() {
   authToken = null;
   localStorage.removeItem('token');
   updateAdminUI();
+  backToList();
   loadHospitals();
   document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3></div>`;
   selectedId = null;
@@ -134,6 +135,13 @@ async function selectHospital(id) {
   showView('hospitals');
   const h = await api(`/api/hospitals/${id}`);
   const admin = isAdmin();
+
+  // Mobile: cacher la liste, afficher le détail
+  if (window.innerWidth <= 768) {
+    document.querySelector('.panel-list').classList.add('has-selected');
+    document.querySelector('.panel-detail').classList.add('has-selected');
+  }
+
   const groups = {};
   for (const s of h.services) {
     const site = s.building || 'Général';
@@ -165,6 +173,7 @@ async function selectHospital(id) {
       <button class="btn btn-outline btn-sm" onclick="window.open('https://waze.com/ul?ll=${h.lat},${h.lng}&navigate=yes','_blank')">🗺️ Waze</button>
     </div>` : '';
   document.getElementById('hospitalDetail').innerHTML = `
+    <button class="mobile-back" onclick="backToList()">← Retour</button>
     <div class="detail-header">
       <h2>${esc(h.name)}</h2>
       <div class="detail-info">
@@ -180,6 +189,11 @@ async function selectHospital(id) {
     </div>
     <div class="services-section">${h.services.length === 0 ? '<div class="empty-state">Aucun service</div>' : svcHTML}</div>`;
   renderHospitalList('');
+}
+
+function backToList() {
+  document.querySelector('.panel-list').classList.remove('has-selected');
+  document.querySelector('.panel-detail').classList.remove('has-selected');
 }
 
 // ===== QUICK SEARCH (accent-insensitive) =====
@@ -305,6 +319,7 @@ async function saveHospital(e) {
 async function deleteHospital(id) {
   await api(`/api/hospitals/${id}`, { method: 'DELETE' });
   selectedId = null;
+  backToList();
   document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3></div>`;
   loadHospitals();
 }
