@@ -121,7 +121,7 @@ function renderHospitalList(search) {
     <div class="hospital-card ${selectedId === h.id ? 'active' : ''}" onclick="selectHospital(${h.id})">
       <h3>${esc(h.name)}</h3>
       <div class="addr">${esc(h.address)}</div>
-      ${h.phone ? `<div class="phone">${telLink(h.phone)}</div>` : ''}
+      ${h.phone ? `<div class="phone">📞 ${esc(h.phone)}</div>` : ''}
     </div>
   `).join('');
 }
