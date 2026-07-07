@@ -133,10 +133,9 @@ async function initialize() {
 
     db.run("COMMIT");
     saveDb();
+    insertH.free();
+    insertS.free();
   }
-
-  insertH.free();
-  insertS.free();
 }
 
 module.exports = { initialize, get, all, run: query };
