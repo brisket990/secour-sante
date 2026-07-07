@@ -43,7 +43,7 @@ function verifyPw(pw, stored) {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
     const token = crypto.randomBytes(32).toString('hex');
@@ -51,7 +51,7 @@ app.post('/api/login', (req, res) => {
     return res.json({ token, role: 'admin' });
   }
   // User login
-  const user = get('SELECT * FROM users WHERE email = ?', [req.body.email]);
+  const user = await get('SELECT * FROM users WHERE email = ?', [req.body.email]);
   if (!user) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
   if (user.status !== 'approved') return res.status(403).json({ error: 'Compte en attente de validation' });
   if (!verifyPw(req.body.password, user.password)) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
@@ -64,7 +64,7 @@ app.post('/api/register', async (req, res) => {
   const { nom, prenom, email, smur, password } = req.body;
   if (!nom || !prenom || !email || !smur || !password) return res.status(400).json({ error: 'Tous les champs sont requis' });
   if (!email.endsWith('@aphp.fr') && !email.endsWith('@ghu-paris.fr')) return res.status(400).json({ error: 'Email @aphp.fr requis' });
-  const existing = get('SELECT id FROM users WHERE email = ?', [email]);
+  const existing = await get('SELECT id FROM users WHERE email = ?', [email]);
   if (existing) return res.status(400).json({ error: 'Cet email est déjà enregistré' });
   const hashed = hashPw(password);
   const result = await run('INSERT INTO users (nom, prenom, email, smur, password) VALUES (?, ?, ?, ?, ?)',
@@ -72,12 +72,12 @@ app.post('/api/register', async (req, res) => {
   res.status(201).json({ message: 'Compte créé, en attente de validation par un administrateur' });
 });
 
-app.get('/api/pending-users', requireAuth, (req, res) => {
-  res.json(all("SELECT id, nom, prenom, email, smur, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC"));
+app.get('/api/pending-users', requireAuth, async (req, res) => {
+  res.json(await all("SELECT id, nom, prenom, email, smur, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC"));
 });
 
-app.put('/api/users/:id/approve', requireAuth, (req, res) => {
-  run('UPDATE users SET status = ? WHERE id = ?', ['approved', req.params.id]);
+app.put('/api/users/:id/approve', requireAuth, async (req, res) => {
+  await run('UPDATE users SET status = ? WHERE id = ?', ['approved', req.params.id]);
   res.json({ success: true });
 });
 
