@@ -314,12 +314,16 @@ async function saveHospital(e) {
     lat: parseFloat(document.getElementById('hLat').value) || 0,
     lng: parseFloat(document.getElementById('hLng').value) || 0,
   };
-  if (id) await api(`/api/hospitals/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-  else await api('/api/hospitals', { method: 'POST', body: JSON.stringify(data) });
-  closeModal('hospitalModal');
-  selectedId = id ? parseInt(id) : null;
-  if (selectedId) selectHospital(selectedId);
-  loadHospitals();
+  try {
+    if (id) await api(`/api/hospitals/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    else await api('/api/hospitals', { method: 'POST', body: JSON.stringify(data) });
+    closeModal('hospitalModal');
+    selectedId = id ? parseInt(id) : null;
+    if (selectedId) selectHospital(selectedId);
+    loadHospitals();
+  } catch (e) {
+    alert('Erreur: ' + e.message);
+  }
 }
 
 async function deleteHospital(id) {
@@ -365,10 +369,14 @@ async function saveService(e) {
     description: document.getElementById('sDescription').value,
     phone: document.getElementById('sPhone').value,
   };
-  if (id) await api(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-  else await api('/api/services', { method: 'POST', body: JSON.stringify(data) });
-  closeModal('serviceModal');
-  if (selectedId) selectHospital(parseInt(hospitalId));
+  try {
+    if (id) await api(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    else await api('/api/services', { method: 'POST', body: JSON.stringify(data) });
+    closeModal('serviceModal');
+    if (selectedId) selectHospital(parseInt(hospitalId));
+  } catch (e) {
+    alert('Erreur: ' + e.message);
+  }
 }
 
 async function deleteService(id) {
@@ -474,13 +482,14 @@ async function saveProtocol(e) {
     icon: document.getElementById('pIcon').value,
     url: document.getElementById('pUrl').value,
   };
-  if (id) {
-    await api(`/api/protocols/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-  } else {
-    await api('/api/protocols', { method: 'POST', body: JSON.stringify(data) });
+  try {
+    if (id) await api(`/api/protocols/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    else await api('/api/protocols', { method: 'POST', body: JSON.stringify(data) });
+    closeModal('protocolModal');
+    loadProtocols();
+  } catch (e) {
+    alert('Erreur: ' + e.message);
   }
-  closeModal('protocolModal');
-  loadProtocols();
 }
 
 async function deleteProtocol(id) {
