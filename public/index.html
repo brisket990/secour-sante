@@ -73,6 +73,9 @@
         <span class="nav-icon">👤</span><span>Candidatures</span>
         <span class="nav-badge" id="candidaturesCount">0</span>
       </a>
+      <a id="navUsers" class="nav-item hidden" href="#" onclick="return showView('users')">
+        <span class="nav-icon">👥</span><span>Utilisateurs</span>
+      </a>
       <a class="nav-item active" href="#" onclick="return showView('hospitals')">
         <span class="nav-icon">🏥</span><span>Hôpitaux</span>
         <span class="nav-badge" id="hospitalCount">0</span>
@@ -201,6 +204,15 @@
           <p>Comptes en attente de validation</p>
         </div>
         <div id="candidaturesList" class="inbox-list"></div>
+      </div>
+
+      <!-- Vue Utilisateurs (admin) -->
+      <div id="view-users" class="view">
+        <div class="view-header">
+          <h2>👥 Utilisateurs</h2>
+          <p>Gestion de tous les comptes</p>
+        </div>
+        <div id="usersList" class="inbox-list"></div>
       </div>
 
       <!-- Vue Grande garde -->

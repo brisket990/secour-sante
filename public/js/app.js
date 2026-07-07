@@ -52,11 +52,12 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
-  const idx = ['inbox','candidatures','hospitals','grandegarde','recherche','contact','infos'].indexOf(name);
+  const idx = ['inbox','candidatures','users','hospitals','grandegarde','recherche','contact','infos'].indexOf(name);
   document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
   if (name === 'hospitals') loadHospitals();
   if (name === 'inbox') loadInbox();
   if (name === 'candidatures') loadCandidatures();
+  if (name === 'users') loadUsers();
   if (name === 'grandegarde') loadProtocols();
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
@@ -213,6 +214,7 @@ function updateAdminUI() {
   document.getElementById('addProtocolBtn').style.display = admin ? '' : 'none';
   document.getElementById('navInbox').classList.toggle('hidden', !admin);
   document.getElementById('navCandidatures').classList.toggle('hidden', !admin);
+  document.getElementById('navUsers').classList.toggle('hidden', !admin);
   if (admin) { loadInboxCount(); loadCandidaturesCount(); }
 
   // User info button in sidebar footer
@@ -463,6 +465,46 @@ async function promoteUser(id) {
   loadCandidatures();
   loadCandidaturesCount();
   alert('Utilisateur promu administrateur. Il doit se reconnecter pour que le changement prenne effet.');
+}
+
+// ===== USERS (admin: all users) =====
+async function loadUsers() {
+  const users = await api('/api/users');
+  const container = document.getElementById('usersList');
+  if (!users.length) { container.innerHTML = '<div class="empty-state">Aucun utilisateur</div>'; return; }
+  container.innerHTML = users.map(u => `
+    <div class="inbox-item">
+      <h4>${esc(u.prenom)} ${esc(u.nom)} ${u.role === 'admin' ? '👑' : ''}</h4>
+      <div class="inbox-meta"><span>${esc(u.email)}</span><span>${esc(u.smur)}</span></div>
+      <div class="inbox-meta">
+        <span>Inscrit le ${u.created_at}</span>
+        <span class="badge-status ${u.status}">${u.status}</span>
+      </div>
+      <div class="inbox-actions" style="flex-wrap:wrap">
+        <select class="status-select" onchange="updateUserStatus(${u.id}, this.value)" ${u.role === 'admin' ? 'disabled' : ''}>
+          <option value="pending" ${u.status === 'pending' ? 'selected' : ''}>En attente</option>
+          <option value="approved" ${u.status === 'approved' ? 'selected' : ''}>Approuvé</option>
+          <option value="rejected" ${u.status === 'rejected' ? 'selected' : ''}>Rejeté</option>
+        </select>
+        <button class="btn btn-sm btn-outline" onclick="if(confirm('Promouvoir ${esc(u.prenom)} ${esc(u.nom)} en administrateur ?')) promoteUser(${u.id})" ${u.role === 'admin' ? 'disabled' : ''}>👑 Admin</button>
+        <button class="btn btn-sm btn-danger" onclick="if(confirm('Supprimer définitivement ${esc(u.prenom)} ${esc(u.nom)} ?')) deleteUser(${u.id})">🗑️ Supprimer</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function updateUserStatus(id, status) {
+  await api(`/api/users/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
+  loadUsers();
+  loadCandidatures();
+  loadCandidaturesCount();
+}
+
+async function deleteUser(id) {
+  await api(`/api/users/${id}`, { method: 'DELETE' });
+  loadUsers();
+  loadCandidatures();
+  loadCandidaturesCount();
 }
 
 // ===== MODALS =====

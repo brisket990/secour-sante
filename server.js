@@ -76,6 +76,19 @@ app.get('/api/pending-users', requireAuth, async (req, res) => {
   res.json(await all("SELECT id, nom, prenom, email, smur, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC"));
 });
 
+app.get('/api/users', requireAuth, async (req, res) => {
+  res.json(await all("SELECT id, nom, prenom, email, smur, role, status, created_at FROM users ORDER BY created_at DESC"));
+});
+
+app.put('/api/users/:id/status', requireAuth, async (req, res) => {
+  const { status } = req.body;
+  if (!['pending', 'approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Statut invalide' });
+  }
+  await run('UPDATE users SET status = ? WHERE id = ?', [status, req.params.id]);
+  res.json({ success: true });
+});
+
 app.put('/api/users/:id/approve', requireAuth, async (req, res) => {
   await run('UPDATE users SET status = ? WHERE id = ?', ['approved', req.params.id]);
   res.json({ success: true });
@@ -93,6 +106,11 @@ app.put('/api/users/:id/promote', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/users/:id/reject', requireAuth, async (req, res) => {
+  await run('DELETE FROM users WHERE id = ?', [req.params.id]);
+  res.json({ success: true });
+});
+
+app.delete('/api/users/:id', requireAuth, async (req, res) => {
   await run('DELETE FROM users WHERE id = ?', [req.params.id]);
   res.json({ success: true });
 });
