@@ -23,6 +23,9 @@
         <span class="nav-icon">🏥</span><span>Hôpitaux</span>
         <span class="nav-badge" id="hospitalCount">0</span>
       </a>
+      <a class="nav-item" href="#" onclick="return showView('grandegarde')">
+        <span class="nav-icon">🛡️</span><span>Grande garde</span>
+      </a>
       <a class="nav-item" href="#" onclick="return showView('recherche')">
         <span class="nav-icon">🔍</span><span>Recherche rapide</span>
       </a>
@@ -32,9 +35,6 @@
       <a id="navInbox" class="nav-item hidden" href="#" onclick="return showView('inbox')">
         <span class="nav-icon">📬</span><span>Messages reçus</span>
         <span class="nav-badge" id="inboxCount">0</span>
-      </a>
-      <a class="nav-item" href="#" onclick="return showView('grandegarde')">
-        <span class="nav-icon">🛡️</span><span>Grande garde</span>
       </a>
       <a class="nav-item" href="#" onclick="return showView('infos')">
         <span class="nav-icon">ℹ️</span><span>À propos</span>
@@ -145,7 +145,7 @@
       <div id="view-grandegarde" class="view">
         <div class="view-header">
           <h2>🛡️ Grande garde</h2>
-          <p>Procédures et protocoles</p>
+          <p>Grande Garde</p>
         </div>
         <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
           <button class="btn btn-primary btn-sm" id="addProtocolBtn" onclick="showProtocolModal()" style="display:none">+ Ajouter</button>
