@@ -93,17 +93,38 @@
       <!-- Vue Contact -->
       <div id="view-contact" class="view">
         <div class="view-header">
-          <h2>✉️ Nous contacter</h2>
-          <p>Signalez un nouvel hôpital, une mise à jour ou une erreur</p>
+          <h2>✉️ Proposer une modification</h2>
+          <p>Nouvel hôpital, nouveau service, correction...</p>
         </div>
         <div class="about-card" style="max-width:600px">
           <form id="contactForm" onsubmit="sendContact(event)">
             <div class="form-group"><label>Votre nom *</label><input type="text" id="contactName" required></div>
             <div class="form-group"><label>Votre email *</label><input type="email" id="contactEmail" required></div>
-            <div class="form-group"><label>Sujet</label><input type="text" id="contactSubject" placeholder="Nouvel hôpital, correction..."></div>
-            <div class="form-group"><label>Message *</label><textarea id="contactMessage" rows="5" required></textarea></div>
-            <div class="form-actions"><button type="submit" class="btn btn-primary">Envoyer</button></div>
-            <div id="contactSuccess" class="contact-success hidden">✅ Message envoyé ! Merci.</div>
+            <div class="form-group"><label>Type de demande</label>
+              <select id="contactType" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--input-bg);color:var(--text)" onchange="toggleContactHospital()">
+                <option value="new_hospital">🏥 Nouvel hôpital</option>
+                <option value="new_service">➕ Nouveau service</option>
+                <option value="correction">✏️ Correction / Modification</option>
+                <option value="other">📝 Autre</option>
+              </select>
+            </div>
+            <div id="contactHospitalFields">
+              <div class="form-group"><label>Hôpital concerné</label><input type="text" id="contactHospital" placeholder="Nom de l'hôpital"></div>
+              <div class="form-group"><label>Service</label><input type="text" id="contactService" placeholder="Nom du service"></div>
+              <div class="form-row">
+                <div class="form-group"><label>Bâtiment / Site</label><input type="text" id="contactBuilding" placeholder="ex: Bâtiment Nord"></div>
+                <div class="form-group"><label>Étage</label><input type="text" id="contactFloor" placeholder="ex: 3e étage"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Code porte</label><input type="text" id="contactDoorCode" placeholder="ex: Code 1234"></div>
+                <div class="form-group"><label>Téléphone direct</label><input type="text" id="contactPhone" placeholder="ex: 01 42 16 01 10"></div>
+              </div>
+            </div>
+            <div class="form-group"><label>Message / Description *</label>
+              <textarea id="contactMessage" rows="4" required placeholder="Décrivez les informations à ajouter ou modifier..."></textarea>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Envoyer la proposition</button></div>
+            <div id="contactSuccess" class="contact-success hidden">✅ Message envoyé ! Merci pour votre contribution.</div>
           </form>
         </div>
       </div>

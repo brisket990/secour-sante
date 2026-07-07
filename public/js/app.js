@@ -1,7 +1,12 @@
 let selectedId = null;
 let authToken = localStorage.getItem('token') || null;
+let allHospitals = [];
 
 function isAdmin() { return !!authToken; }
+
+function normalize(str) {
+  return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
 
 function api(url, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
@@ -33,46 +38,39 @@ function showView(name) {
 
 // ===== DARK MODE =====
 if (localStorage.getItem('dark') === 'true') document.body.classList.add('dark');
-updateDarkUI();
-
 function toggleDarkMode() {
   document.body.classList.toggle('dark');
   localStorage.setItem('dark', document.body.classList.contains('dark'));
   updateDarkUI();
 }
-
 function updateDarkUI() {
   const dark = document.body.classList.contains('dark');
   document.getElementById('darkIcon').textContent = dark ? '☀️' : '🌙';
   document.getElementById('darkText').textContent = dark ? 'Light mode' : 'Dark mode';
 }
+updateDarkUI();
 
 // ===== ADMIN =====
 function toggleAdmin() {
-  if (isAdmin()) {
-    if (confirm('Se déconnecter ?')) logout();
-  } else {
+  if (isAdmin()) { if (confirm('Se déconnecter ?')) logout(); }
+  else {
     document.getElementById('loginOverlay').classList.remove('hidden');
     document.getElementById('loginPassword').value = '';
     document.getElementById('loginError').classList.add('hidden');
     setTimeout(() => document.getElementById('loginPassword').focus(), 100);
   }
 }
-
 function closeLogin() { document.getElementById('loginOverlay').classList.add('hidden'); }
 
 async function doLogin() {
-  const pwd = document.getElementById('loginPassword').value;
   try {
-    const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password: pwd }) });
+    const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password: document.getElementById('loginPassword').value }) });
     authToken = res.token;
     localStorage.setItem('token', res.token);
     closeLogin();
     updateAdminUI();
     if (selectedId) selectHospital(selectedId);
-  } catch {
-    document.getElementById('loginError').classList.remove('hidden');
-  }
+  } catch { document.getElementById('loginError').classList.remove('hidden'); }
 }
 
 function logout() {
@@ -81,8 +79,7 @@ function logout() {
   localStorage.removeItem('token');
   updateAdminUI();
   loadHospitals();
-  document.getElementById('hospitalDetail').innerHTML =
-    `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3></div>`;
+  document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3></div>`;
   selectedId = null;
 }
 
@@ -96,20 +93,25 @@ function updateAdminUI() {
   if (admin) loadInboxCount();
 }
 
-// ===== HOSPITALS =====
-let searchTimer;
-function searchHospitals() { clearTimeout(searchTimer); searchTimer = setTimeout(loadHospitals, 250); }
-
+// ===== HOSPITALS (accent-insensitive) =====
 async function loadHospitals() {
-  const search = document.getElementById('searchInput')?.value || '';
-  const q = search ? `?search=${encodeURIComponent(search)}` : '';
-  const hospitals = await api(`/api/hospitals${q}`);
-  document.getElementById('hospitalCount').textContent = hospitals.length;
+  allHospitals = await api('/api/hospitals');
+  document.getElementById('hospitalCount').textContent = allHospitals.length;
   document.getElementById('subtitleHospitals').textContent =
-    hospitals.length === 0 ? 'Aucun résultat' : `${hospitals.length} établissement${hospitals.length > 1 ? 's' : ''}`;
+    `${allHospitals.length} établissement${allHospitals.length > 1 ? 's' : ''}`;
+  renderHospitalList('');
+}
+
+function renderHospitalList(search) {
+  const q = normalize(search);
+  const filtered = !q ? allHospitals : allHospitals.filter(h =>
+    normalize(h.name).includes(q) ||
+    normalize(h.address).includes(q) ||
+    normalize(h.phone).includes(q)
+  );
   const container = document.getElementById('hospitalList');
-  if (!hospitals.length) { container.innerHTML = '<div class="empty-state">Aucun hôpital</div>'; return; }
-  container.innerHTML = hospitals.map(h => `
+  if (!filtered.length) { container.innerHTML = '<div class="empty-state">Aucun résultat</div>'; return; }
+  container.innerHTML = filtered.map(h => `
     <div class="hospital-card ${selectedId === h.id ? 'active' : ''}" onclick="selectHospital(${h.id})">
       <h3>${esc(h.name)}</h3>
       <div class="addr">${esc(h.address)}</div>
@@ -118,6 +120,15 @@ async function loadHospitals() {
   `).join('');
 }
 
+// Search input handler (replaces old topbar search)
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) {
+    e.preventDefault();
+    document.getElementById('quickSearchInput')?.focus();
+  }
+});
+
+// ===== SELECT HOSPITAL =====
 async function selectHospital(id) {
   selectedId = id;
   showView('hospitals');
@@ -163,43 +174,69 @@ async function selectHospital(id) {
       ${gps}
       ${admin ? `<div class="detail-admin">
         <button class="btn btn-primary btn-sm" onclick="showHospitalModal(${h.id})">✏️ Modifier</button>
-        <button class="btn btn-danger btn-sm" onclick="if(confirm('Supprimer ?')) deleteHospital(${h.id})">🗑️ Supprimer</button>
+        <button class="btn btn-danger btn-sm" onclick="if(confirm('Supprimer cet hôpital ?')) deleteHospital(${h.id})">🗑️ Supprimer</button>
         <button class="btn btn-primary btn-sm" onclick="showServiceModal(${h.id})">+ Service</button>
       </div>` : ''}
     </div>
     <div class="services-section">${h.services.length === 0 ? '<div class="empty-state">Aucun service</div>' : svcHTML}</div>`;
-  loadHospitals();
+  renderHospitalList('');
 }
 
-// ===== QUICK SEARCH =====
+// ===== QUICK SEARCH (accent-insensitive) =====
 let quickTimer;
 function quickSearch() {
   clearTimeout(quickTimer);
-  quickTimer = setTimeout(async () => {
-    const q = document.getElementById('quickSearchInput').value.trim();
+  quickTimer = setTimeout(() => {
+    const q = normalize(document.getElementById('quickSearchInput').value);
     const container = document.getElementById('quickResults');
     if (!q) { container.innerHTML = ''; return; }
-    const hospitals = await api(`/api/hospitals?search=${encodeURIComponent(q)}`);
-    container.innerHTML = hospitals.length === 0
-      ? '<div class="empty-state">Aucun résultat</div>'
-      : hospitals.map(h => `
-        <div class="result-card" onclick="selectHospital(${h.id})">
-          <h4>${esc(h.name)}</h4>
-          <p>${esc(h.address)}</p>
-        </div>`).join('');
-  }, 250);
+    const results = allHospitals.filter(h =>
+      normalize(h.name).includes(q) || normalize(h.address).includes(q) ||
+      normalize(h.phone).includes(q)
+    );
+    // Also search via API for service-level matches
+    if (results.length === 0) {
+      api(`/api/hospitals?search=${encodeURIComponent(q)}`).then(hs => {
+        container.innerHTML = hs.length === 0 ? '<div class="empty-state">Aucun résultat</div>'
+          : hs.map(h => `<div class="result-card" onclick="selectHospital(${h.id})"><h4>${esc(h.name)}</h4><p>${esc(h.address)}</p></div>`).join('');
+      });
+    } else {
+      container.innerHTML = results.map(h =>
+        `<div class="result-card" onclick="selectHospital(${h.id})"><h4>${esc(h.name)}</h4><p>${esc(h.address)}</p></div>`
+      ).join('');
+    }
+  }, 200);
 }
 
 // ===== CONTACT =====
+function toggleContactHospital() {
+  const type = document.getElementById('contactType').value;
+  document.getElementById('contactHospitalFields').style.display =
+    ['new_hospital','new_service','correction'].includes(type) ? '' : 'none';
+}
+
 async function sendContact(e) {
   e.preventDefault();
-  const data = {
-    name: document.getElementById('contactName').value,
-    email: document.getElementById('contactEmail').value,
-    subject: document.getElementById('contactSubject').value,
-    message: document.getElementById('contactMessage').value,
-  };
-  await api('/api/contact', { method: 'POST', body: JSON.stringify(data) });
+  const type = document.getElementById('contactType').value;
+  const typeLabels = { new_hospital: 'Nouvel hôpital', new_service: 'Nouveau service', correction: 'Correction', other: 'Autre' };
+  let msg = `Type: ${typeLabels[type] || type}\n`;
+  if (document.getElementById('contactHospital').value) msg += `Hôpital: ${document.getElementById('contactHospital').value}\n`;
+  if (document.getElementById('contactService').value) msg += `Service: ${document.getElementById('contactService').value}\n`;
+  if (document.getElementById('contactBuilding').value) msg += `Bâtiment: ${document.getElementById('contactBuilding').value}\n`;
+  if (document.getElementById('contactFloor').value) msg += `Étage: ${document.getElementById('contactFloor').value}\n`;
+  if (document.getElementById('contactDoorCode').value) msg += `Code porte: ${document.getElementById('contactDoorCode').value}\n`;
+  if (document.getElementById('contactPhone').value) msg += `Tél: ${document.getElementById('contactPhone').value}\n`;
+  msg += `\nMessage:\n${document.getElementById('contactMessage').value}`;
+
+  await api('/api/contact', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: document.getElementById('contactName').value,
+      email: document.getElementById('contactEmail').value,
+      subject: typeLabels[type] || 'Contact',
+      message: msg,
+    })
+  });
   document.getElementById('contactForm').reset();
   document.getElementById('contactForm').style.display = 'none';
   document.getElementById('contactSuccess').classList.remove('hidden');
@@ -216,7 +253,7 @@ async function loadInbox() {
       <div class="inbox-meta"><span>${esc(m.name)} (${esc(m.email)})</span><span>${m.created_at}</span></div>
       <div class="inbox-body">${esc(m.message)}</div>
       <div class="inbox-actions">
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteMessage(${m.id})">🗑️</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();if(confirm('Supprimer ?')) deleteMessage(${m.id})">🗑️</button>
       </div>
     </div>`).join('');
   loadInboxCount();
@@ -228,11 +265,10 @@ async function loadInboxCount() {
     document.getElementById('inboxCount').textContent = msgs.filter(m => !m.read).length;
   } catch {}
 }
-
 async function markRead(id) { await api(`/api/messages/${id}/read`, { method: 'PUT' }); loadInbox(); }
-async function deleteMessage(id) { if (!confirm('Supprimer ?')) return; await api(`/api/messages/${id}`, { method: 'DELETE' }); loadInbox(); }
+async function deleteMessage(id) { await api(`/api/messages/${id}`, { method: 'DELETE' }); loadInbox(); }
 
-// ===== HOSPITAL MODAL =====
+// ===== MODALS =====
 function showHospitalModal(id) {
   document.getElementById('hospitalModalTitle').textContent = id ? 'Modifier' : 'Ajouter un hôpital';
   document.getElementById('hId').value = id || '';
@@ -244,9 +280,7 @@ function showHospitalModal(id) {
       document.getElementById('hLat').value = h.lat;
       document.getElementById('hLng').value = h.lng;
     });
-  } else {
-    ['hName','hAddress','hPhone','hLat','hLng'].forEach(id => document.getElementById(id).value = '');
-  }
+  } else { ['hName','hAddress','hPhone','hLat','hLng'].forEach(id => document.getElementById(id).value = ''); }
   document.getElementById('hospitalModal').classList.remove('hidden');
 }
 
@@ -260,8 +294,8 @@ async function saveHospital(e) {
     lat: parseFloat(document.getElementById('hLat').value) || 0,
     lng: parseFloat(document.getElementById('hLng').value) || 0,
   };
-  if (id) { await api(`/api/hospitals/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
-  else { await api('/api/hospitals', { method: 'POST', body: JSON.stringify(data) }); }
+  if (id) await api(`/api/hospitals/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  else await api('/api/hospitals', { method: 'POST', body: JSON.stringify(data) });
   closeModal('hospitalModal');
   selectedId = id ? parseInt(id) : null;
   if (selectedId) selectHospital(selectedId);
@@ -271,12 +305,10 @@ async function saveHospital(e) {
 async function deleteHospital(id) {
   await api(`/api/hospitals/${id}`, { method: 'DELETE' });
   selectedId = null;
-  document.getElementById('hospitalDetail').innerHTML =
-    `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3></div>`;
+  document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3></div>`;
   loadHospitals();
 }
 
-// ===== SERVICE MODAL =====
 function showServiceModal(hospitalId, serviceId) {
   document.getElementById('serviceModalTitle').textContent = serviceId ? 'Modifier' : 'Ajouter un service';
   document.getElementById('sHospitalId').value = hospitalId;
@@ -312,8 +344,8 @@ async function saveService(e) {
     description: document.getElementById('sDescription').value,
     phone: document.getElementById('sPhone').value,
   };
-  if (id) { await api(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
-  else { await api('/api/services', { method: 'POST', body: JSON.stringify(data) }); }
+  if (id) await api(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  else await api('/api/services', { method: 'POST', body: JSON.stringify(data) });
   closeModal('serviceModal');
   if (selectedId) selectHospital(parseInt(hospitalId));
 }
@@ -326,7 +358,6 @@ async function deleteService(id) {
 }
 
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
 function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
 document.addEventListener('click', e => {
