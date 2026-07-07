@@ -119,7 +119,7 @@ function renderHospitalList(search) {
     <div class="hospital-card ${selectedId === h.id ? 'active' : ''}" onclick="selectHospital(${h.id})">
       <h3>${esc(h.name)}</h3>
       <div class="addr">${esc(h.address)}</div>
-      ${h.phone ? `<div class="phone">📞 ${esc(h.phone)}</div>` : ''}
+      ${h.phone ? `<div class="phone">${telLink(h.phone)}</div>` : ''}
     </div>
   `).join('');
 }
@@ -160,7 +160,7 @@ async function selectHospital(id) {
           <h4>${esc(s.name)} ${s.floor ? `<span class="badge-floor">${esc(s.floor)}</span>` : ''}</h4>
           ${s.description ? `<p>${esc(s.description)}</p>` : ''}
           ${s.door_codes ? `<p>🔑 ${esc(s.door_codes)}</p>` : ''}
-          ${s.phone ? `<p>📞 ${esc(s.phone)}</p>` : ''}
+          ${s.phone ? `<p>${telLink(s.phone)}</p>` : ''}
         </div>
         ${admin ? `<div class="service-actions">
           <button onclick="showServiceModal(${h.id},${s.id})">✏️</button>
@@ -181,7 +181,7 @@ async function selectHospital(id) {
       <h2>${esc(h.name)}</h2>
       <div class="detail-info">
         <div class="info-line"><span class="label">Adresse:</span> ${esc(h.address)}</div>
-        <div class="info-line"><span class="label">Contact:</span> ${h.phone || 'Non renseigné'}</div>
+        <div class="info-line"><span class="label">Contact:</span> ${h.phone ? telLink(h.phone) : 'Non renseigné'}</div>
       </div>
       ${gps}
       ${admin ? `<div class="detail-admin">
@@ -377,8 +377,18 @@ async function deleteService(id) {
 
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+function telLink(phone) {
+  if (!phone) return '';
+  const clean = phone.replace(/[\s\.\-\(\)]/g, '');
+  return `<a href="tel:${clean}" style="color:inherit;text-decoration:none">📞 ${esc(phone)}</a>`;
+}
 
 document.addEventListener('click', e => {
+  // Fermer sidebar si clic sur le contenu principal (mobile)
+  if (window.innerWidth <= 768 && !e.target.closest('.sidebar') && !e.target.closest('.hamburger')) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+  }
   if (e.target.classList.contains('modal')) closeModal(e.target.id);
   if (e.target.classList.contains('login-overlay')) closeLogin();
 });
