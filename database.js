@@ -78,6 +78,16 @@ async function initialize() {
     )
   `);
   db.run(`
+    CREATE TABLE IF NOT EXISTS protocols (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      icon TEXT DEFAULT '',
+      url TEXT DEFAULT '',
+      sort_order INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
     CREATE TABLE IF NOT EXISTS services (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       hospital_id INTEGER NOT NULL,

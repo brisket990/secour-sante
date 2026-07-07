@@ -147,24 +147,11 @@
           <h2>🛡️ Grande garde</h2>
           <p>Procédures et protocoles</p>
         </div>
+        <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+          <button class="btn btn-primary btn-sm" id="addProtocolBtn" onclick="showProtocolModal()" style="display:none">+ Ajouter</button>
+        </div>
         <div class="about-card" style="max-width:600px">
-          <div class="gg-links">
-            <a class="gg-link" href="/pdf/neurochirurgicales.pdf" target="_blank">
-              <span class="gg-icon">🧠</span>
-              <span class="gg-title">Neurochirurgicales</span>
-              <span class="gg-arrow">→</span>
-            </a>
-            <a class="gg-link" href="/pdf/thrombectomie.pdf" target="_blank">
-              <span class="gg-icon">🩸</span>
-              <span class="gg-title">Thrombectomie</span>
-              <span class="gg-arrow">→</span>
-            </a>
-            <a class="gg-link" href="/pdf/hemorragies-delivrance.pdf" target="_blank">
-              <span class="gg-icon">🆘</span>
-              <span class="gg-title">Hémorragies de la délivrance</span>
-              <span class="gg-arrow">→</span>
-            </a>
-          </div>
+          <div id="protocolList" class="gg-links"></div>
         </div>
       </div>
 
@@ -239,6 +226,26 @@
         <div class="form-group"><label>Téléphone</label><input type="text" id="sPhone"></div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('serviceModal')">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Protocole -->
+  <div id="protocolModal" class="modal hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="protocolModalTitle">Ajouter un protocole</h2>
+        <button class="modal-close" onclick="closeModal('protocolModal')">&times;</button>
+      </div>
+      <form id="protocolForm" onsubmit="saveProtocol(event)">
+        <input type="hidden" id="pId">
+        <div class="form-group"><label>Nom *</label><input type="text" id="pName" required></div>
+        <div class="form-group"><label>Icône (emoji)</label><input type="text" id="pIcon" placeholder="ex: 🧠"></div>
+        <div class="form-group"><label>URL *</label><input type="url" id="pUrl" required placeholder="https://..."></div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('protocolModal')">Annuler</button>
           <button type="submit" class="btn btn-primary">Enregistrer</button>
         </div>
       </form>

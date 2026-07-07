@@ -120,6 +120,34 @@ app.put('/api/services/:id', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// ===== PROTOCOLS (Grande garde) =====
+app.get('/api/protocols', (req, res) => {
+  res.json(all('SELECT * FROM protocols ORDER BY sort_order, name'));
+});
+
+app.post('/api/protocols', requireAuth, (req, res) => {
+  const { name, icon, url } = req.body;
+  if (!name || !url) return res.status(400).json({ error: 'Nom et URL requis' });
+  const result = run(
+    'INSERT INTO protocols (name, icon, url) VALUES (?, ?, ?)',
+    [name, icon || '', url]
+  );
+  res.status(201).json({ id: result.lastInsertRowid });
+});
+
+app.put('/api/protocols/:id', requireAuth, (req, res) => {
+  const { name, icon, url } = req.body;
+  if (!name || !url) return res.status(400).json({ error: 'Nom et URL requis' });
+  run('UPDATE protocols SET name=?, icon=?, url=? WHERE id=?',
+    [name, icon || '', url, req.params.id]);
+  res.json({ success: true });
+});
+
+app.delete('/api/protocols/:id', requireAuth, (req, res) => {
+  run('DELETE FROM protocols WHERE id = ?', [req.params.id]);
+  res.json({ success: true });
+});
+
 // Config email (optionnel)
 const MAIL_TO = process.env.MAIL_TO || 'google.stamina231@passmail.com';
 let transporter = null;

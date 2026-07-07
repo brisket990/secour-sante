@@ -32,6 +32,7 @@ function showView(name) {
   document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
   if (name === 'hospitals') loadHospitals();
   if (name === 'inbox') loadInbox();
+  if (name === 'grandegarde') loadProtocols();
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('open');
@@ -93,6 +94,7 @@ function updateAdminUI() {
   document.getElementById('adminToggle').classList.toggle('active', admin);
   document.getElementById('adminBadge').classList.toggle('hidden', !admin);
   document.getElementById('addBtn').style.display = admin ? '' : 'none';
+  document.getElementById('addProtocolBtn').style.display = admin ? '' : 'none';
   document.getElementById('navInbox').classList.toggle('hidden', !admin);
   if (admin) loadInboxCount();
 }
@@ -401,6 +403,70 @@ document.addEventListener('keydown', e => {
     });
   }
 });
+
+// ===== PROTOCOLS (Grande garde) =====
+let allProtocols = [];
+
+async function loadProtocols() {
+  allProtocols = await api('/api/protocols');
+  const container = document.getElementById('protocolList');
+  const admin = isAdmin();
+  container.innerHTML = allProtocols.map(p => `
+    <div class="gg-link-wrapper" style="position:relative">
+      <a class="gg-link" href="${esc(p.url)}" target="_blank" rel="noopener">
+        <span class="gg-icon">${p.icon || '📄'}</span>
+        <span class="gg-title">${esc(p.name)}</span>
+        <span class="gg-arrow">→</span>
+      </a>
+      ${admin ? `<div style="position:absolute;top:4px;right:4px;display:flex;gap:4px">
+        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();editProtocol(${p.id})">✏️</button>
+        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();if(confirm('Supprimer ce protocole ?')) deleteProtocol(${p.id})">🗑️</button>
+      </div>` : ''}
+    </div>
+  `).join('');
+}
+
+function showProtocolModal() {
+  document.getElementById('protocolModalTitle').textContent = 'Ajouter un protocole';
+  document.getElementById('pId').value = '';
+  document.getElementById('pName').value = '';
+  document.getElementById('pIcon').value = '';
+  document.getElementById('pUrl').value = '';
+  document.getElementById('protocolModal').classList.remove('hidden');
+}
+
+async function editProtocol(id) {
+  const p = allProtocols.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('protocolModalTitle').textContent = 'Modifier le protocole';
+  document.getElementById('pId').value = p.id;
+  document.getElementById('pName').value = p.name;
+  document.getElementById('pIcon').value = p.icon || '';
+  document.getElementById('pUrl').value = p.url;
+  document.getElementById('protocolModal').classList.remove('hidden');
+}
+
+async function saveProtocol(e) {
+  e.preventDefault();
+  const id = document.getElementById('pId').value;
+  const data = {
+    name: document.getElementById('pName').value,
+    icon: document.getElementById('pIcon').value,
+    url: document.getElementById('pUrl').value,
+  };
+  if (id) {
+    await api(`/api/protocols/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  } else {
+    await api('/api/protocols', { method: 'POST', body: JSON.stringify(data) });
+  }
+  closeModal('protocolModal');
+  loadProtocols();
+}
+
+async function deleteProtocol(id) {
+  await api(`/api/protocols/${id}`, { method: 'DELETE' });
+  loadProtocols();
+}
 
 updateAdminUI();
 loadHospitals();
