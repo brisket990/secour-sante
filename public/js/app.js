@@ -207,8 +207,10 @@ async function doRegister(e) {
 
 function updateAdminUI() {
   const admin = isAdmin();
+  const loggedIn = !!authToken;
   document.getElementById('adminText').textContent = admin ? 'Admin ✓' : 'Admin';
   document.getElementById('adminToggle').classList.toggle('active', admin);
+  document.getElementById('adminToggle').style.display = (admin || !loggedIn) ? '' : 'none';
   document.getElementById('adminBadge').classList.toggle('hidden', !admin);
   document.getElementById('addBtn').style.display = admin ? '' : 'none';
   document.getElementById('addProtocolBtn').style.display = admin ? '' : 'none';
