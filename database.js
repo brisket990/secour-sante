@@ -80,8 +80,18 @@ async function seedData() {
 
 async function initialize(forceLocal) {
   if (dbUrl && !forceLocal) {
+    console.log('Connexion Turso...');
     const { createClient } = require('@libsql/client');
-    db = createClient({ url: dbUrl, authToken: dbToken });
+    try {
+      db = createClient({ url: dbUrl, authToken: dbToken });
+      // Test connection
+      await db.execute("SELECT 1");
+      console.log('Turso connecté');
+    } catch (e) {
+      console.error('Erreur connexion Turso:', e.message);
+      console.log('Fallback vers sql.js local');
+      return initialize(true);
+    }
 
     query = async (sql, params = []) => {
       const result = await db.execute({ sql, args: params });

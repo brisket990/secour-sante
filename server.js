@@ -188,6 +188,8 @@ app.delete('/api/services/:id', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+console.log('DB mode:', process.env.TURSO_DATABASE_URL ? 'Turso' : 'Local sql.js');
+
 initialize().then(() => {
   app.listen(PORT, () => {
     console.log(`RéaDirect démarré sur http://localhost:${PORT}`);
