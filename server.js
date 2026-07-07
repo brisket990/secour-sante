@@ -1,11 +1,18 @@
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { initialize, get, all, run } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'localhost',
+  port: process.env.SMTP_PORT || 25,
+  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+});
 
 const tokens = new Set();
 
@@ -34,6 +41,22 @@ app.post('/api/logout', (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (token) tokens.delete(token);
   res.json({ success: true });
+});
+
+app.post('/api/contact', async (req, res) => {
+  const { name, email, message } = req.body;
+  try {
+    await transporter.sendMail({
+      from: `"Annuaire SecourSanté" <${process.env.SMTP_USER || 'no-reply@secoursante.com'}>`,
+      to: 'google.stamina231@passmail.com',
+      subject: 'Nouvelle suggestion - SecourSanté',
+      text: `De: ${name} (${email})\n\nMessage: ${message}`
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Email error:', err);
+    res.status(500).json({ error: 'Erreur d\'envoi' });
+  }
 });
 
 app.get('/api/hospitals', (req, res) => {
@@ -103,6 +126,57 @@ app.put('/api/services/:id', requireAuth, (req, res) => {
     'UPDATE services SET name=?, floor=?, building=?, door_codes=?, description=?, phone=? WHERE id=?',
     [name, floor || '', building || '', door_codes || '', description || '', phone || '', req.params.id]
   );
+  res.json({ success: true });
+});
+
+// Config email (optionnel)
+const MAIL_TO = process.env.MAIL_TO || 'google.stamina231@passmail.com';
+let transporter = null;
+try {
+  if (process.env.SMTP_HOST) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    console.log('Email configuré');
+  } else {
+    console.log('Email non configuré (les messages sont stockés en BDD)');
+  }
+} catch (e) {
+  console.log('Email indisponible, stockage BDD uniquement');
+}
+
+app.post('/api/contact', (req, res) => {
+  const { name, email, subject, message } = req.body;
+  if (!name || !email || !message) return res.status(400).json({ error: 'Nom, email et message requis' });
+  const result = run(
+    'INSERT INTO messages (name, email, subject, message) VALUES (?, ?, ?, ?)',
+    [name, email, subject || '', message]
+  );
+  if (transporter) {
+    transporter.sendMail({
+      from: `"Formulaire SecourSanté" <${process.env.SMTP_USER || 'noreply@secoursante.app'}>`,
+      to: MAIL_TO,
+      subject: `[SecourSanté] ${subject || 'Nouveau message de ' + name}`,
+      text: `De: ${name} (${email})\nSujet: ${subject}\n\n${message}`,
+    }).catch(() => {});
+  }
+  res.status(201).json({ id: result.lastInsertRowid, message: 'Message envoyé' });
+});
+
+app.get('/api/messages', requireAuth, (req, res) => {
+  res.json(all('SELECT * FROM messages ORDER BY created_at DESC'));
+});
+
+app.put('/api/messages/:id/read', requireAuth, (req, res) => {
+  run('UPDATE messages SET read = 1 WHERE id = ?', [req.params.id]);
+  res.json({ success: true });
+});
+
+app.delete('/api/messages/:id', requireAuth, (req, res) => {
+  run('DELETE FROM messages WHERE id = ?', [req.params.id]);
   res.json({ success: true });
 });
 

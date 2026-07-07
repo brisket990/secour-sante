@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "express": "^4.21.0",
+    "nodemailer": "^9.0.3",
     "sql.js": "^1.11.0"
   }
 }

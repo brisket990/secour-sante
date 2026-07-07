@@ -355,7 +355,40 @@ main { flex: 1; padding: 1.5rem; }
 .login-error.hidden { display: none; }
 .login-actions { display: flex; gap: 0.5rem; justify-content: center; }
 
-/* Responsive */
+/* Contact */
+.contact-success {
+  background: #d4edda;
+  color: #155724;
+  padding: 1rem;
+  border-radius: var(--radius);
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+.contact-success.hidden { display: none; }
+
+/* Inbox */
+.inbox-list { max-width: 700px; }
+.inbox-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+}
+.inbox-card.unread {
+  border-left: 4px solid var(--accent);
+  background: #f8fbff;
+}
+.inbox-card h4 { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.2rem; }
+.inbox-card .inbox-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.inbox-card .inbox-body { font-size: 0.85rem; color: #444; white-space: pre-wrap; }
+.inbox-card .inbox-actions { margin-top: 0.5rem; display: flex; gap: 0.5rem; }
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); }

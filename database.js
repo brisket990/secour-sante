@@ -67,6 +67,17 @@ async function initialize() {
     )
   `);
   db.run(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      subject TEXT DEFAULT '',
+      message TEXT NOT NULL,
+      read INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
     CREATE TABLE IF NOT EXISTS services (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       hospital_id INTEGER NOT NULL,

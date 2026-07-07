@@ -29,9 +29,22 @@
         <span class="nav-icon">🔍</span>
         <span>Recherche rapide</span>
       </a>
+      <a class="nav-item" href="#" onclick="return showView('contact')">
+        <span class="nav-icon">✉️</span>
+        <span>Contact</span>
+      </a>
+      <a id="navInbox" class="nav-item hidden" href="#" onclick="return showView('inbox')">
+        <span class="nav-icon">📬</span>
+        <span>Messages reçus</span>
+        <span class="nav-badge" id="inboxCount">0</span>
+      </a>
       <a class="nav-item" href="#" onclick="return showView('infos')">
         <span class="nav-icon">ℹ️</span>
         <span>À propos</span>
+      </a>
+      <a class="nav-item" href="#" onclick="return showContactModal()">
+        <span class="nav-icon">✉️</span>
+        <span>Contact</span>
       </a>
     </nav>
     <div class="sidebar-footer">
@@ -51,10 +64,10 @@
     <!-- Top bar -->
     <header class="topbar">
       <button class="hamburger" onclick="toggleSidebar()">☰</button>
-    <div class="topbar-actions">
-      <span id="adminBadge" class="admin-badge hidden">Admin</span>
-      <button class="btn btn-primary btn-sm" id="addBtn" onclick="showHospitalModal()" style="display:none">+ Ajouter</button>
-    </div>
+      <div class="topbar-actions">
+        <span id="adminBadge" class="admin-badge hidden">Admin</span>
+        <button class="btn btn-primary btn-sm" id="addBtn" onclick="showHospitalModal()" style="display:none">+ Ajouter</button>
+      </div>
     </header>
 
     <!-- Content -->
@@ -89,6 +102,49 @@
         <div id="quickResults" class="quick-results"></div>
       </div>
 
+      <!-- Vue Contact -->
+      <div id="view-contact" class="view">
+        <div class="view-header">
+          <h2>✉️ Nous contacter</h2>
+          <p>Signalez un nouvel hôpital, une mise à jour ou une erreur</p>
+        </div>
+        <div class="about-card" style="max-width:600px">
+          <form id="contactForm" onsubmit="sendContact(event)">
+            <div class="form-group">
+              <label>Votre nom *</label>
+              <input type="text" id="contactName" required>
+            </div>
+            <div class="form-group">
+              <label>Votre email *</label>
+              <input type="email" id="contactEmail" required>
+            </div>
+            <div class="form-group">
+              <label>Sujet</label>
+              <input type="text" id="contactSubject" placeholder="Nouvel hôpital, correction, suggestion...">
+            </div>
+            <div class="form-group">
+              <label>Message *</label>
+              <textarea id="contactMessage" rows="5" required placeholder="Décrivez les informations à ajouter ou modifier..."></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Envoyer le message</button>
+            </div>
+            <div id="contactSuccess" class="contact-success hidden">
+              ✅ Message envoyé ! Merci pour votre contribution.
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Vue Inbox (admin) -->
+      <div id="view-inbox" class="view">
+        <div class="view-header">
+          <h2>📬 Messages reçus</h2>
+          <p>Retours des utilisateurs</p>
+        </div>
+        <div id="inboxList" class="inbox-list"></div>
+      </div>
+
       <!-- Vue Infos -->
       <div id="view-infos" class="view">
         <div class="view-header">
@@ -98,14 +154,10 @@
           <div class="about-logo">🚑</div>
           <h3>SecourSanté</h3>
           <p>Annuaire des services hospitaliers destiné aux ambulances de réanimation et aux services d'urgence.</p>
-          <p>Retrouvez rapidement les informations essentielles : adresse, services, étages, contacts directs.</p>
           <div class="about-features">
             <div class="feature"><span class="feature-icon">📍</span> Navigation GPS intégrée</div>
             <div class="feature"><span class="feature-icon">🔄</span> Données modifiables en temps réel</div>
-            <div class="feature"><span class="feature-icon">📱</span> Application mobile (bientôt)</div>
           </div>
-          <hr>
-          <p style="font-size:0.85rem;color:#94a3b8">Développé pour les équipes AP-HP</p>
         </div>
       </div>
     </main>
@@ -116,10 +168,7 @@
     <div class="login-box">
       <div class="login-icon">🔒</div>
       <h2>Accès administrateur</h2>
-      <p>Mot de passe requis pour modifier les données</p>
-      <div class="login-input-wrap">
-        <input type="password" id="loginPassword" placeholder="Mot de passe" onkeydown="if(event.key==='Enter') doLogin()" autocomplete="off">
-      </div>
+      <input type="password" id="loginPassword" placeholder="Mot de passe" onkeydown="if(event.key==='Enter') doLogin()">
       <p id="loginError" class="login-error hidden">Mot de passe incorrect</p>
       <div class="login-actions">
         <button class="btn btn-secondary" onclick="closeLogin()">Annuler</button>
@@ -137,38 +186,14 @@
       </div>
       <form id="hospitalForm" onsubmit="saveHospital(event)">
         <input type="hidden" id="hId">
-        <div class="form-group">
-          <label>Nom de l'hôpital *</label>
-          <input type="text" id="hName" required>
-        </div>
-        <div class="form-group">
-          <label>Adresse *</label>
-          <input type="text" id="hAddress" required>
-        </div>
+        <div class="form-group"><label>Nom de l'hôpital *</label><input type="text" id="hName" required></div>
+        <div class="form-group"><label>Adresse *</label><input type="text" id="hAddress" required></div>
+        <div class="form-row"><div class="form-group"><label>Téléphone</label><input type="text" id="hPhone"></div></div>
         <div class="form-row">
-          <div class="form-group">
-            <label>Téléphone</label>
-            <input type="text" id="hPhone">
-          </div>
-          <div class="form-group">
-            <label>Téléphone</label>
-            <input type="text" id="hPhone2" placeholder="Optionnel">
-          </div>
+          <div class="form-group"><label>Latitude</label><input type="number" step="any" id="hLat"></div>
+          <div class="form-group"><label>Longitude</label><input type="number" step="any" id="hLng"></div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Latitude</label>
-            <input type="number" step="any" id="hLat" placeholder="48.8566">
-          </div>
-          <div class="form-group">
-            <label>Longitude</label>
-            <input type="number" step="any" id="hLng" placeholder="2.3522">
-          </div>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('hospitalModal')">Annuler</button>
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
-        </div>
+        <div class="form-actions"><button type="button" class="btn btn-secondary" onclick="closeModal('hospitalModal')">Annuler</button><button type="submit" class="btn btn-primary">Enregistrer</button></div>
       </form>
     </div>
   </div>
@@ -181,30 +206,30 @@
         <button class="modal-close" onclick="closeModal('serviceModal')">&times;</button>
       </div>
       <form id="serviceForm" onsubmit="saveService(event)">
-        <input type="hidden" id="sId">
-        <input type="hidden" id="sHospitalId">
-        <div class="form-group">
-          <label>Nom du service *</label>
-          <input type="text" id="sName" required>
-        </div>
-        <div class="form-group">
-          <label>Étage / Localisation</label>
-          <input type="text" id="sFloor" placeholder="ex: 3e étage, Pavillon A">
-        </div>
-        <div class="form-group">
-          <label>Description</label>
-          <textarea id="sDescription" rows="2"></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Téléphone direct</label>
-            <input type="text" id="sPhone">
-          </div>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('serviceModal')">Annuler</button>
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
-        </div>
+        <input type="hidden" id="sId"><input type="hidden" id="sHospitalId">
+        <div class="form-group"><label>Nom du service *</label><input type="text" id="sName" required></div>
+        <div class="form-group"><label>Bâtiment / Site *</label><input type="text" id="sBuilding" required></div>
+        <div class="form-group"><label>Étage / Localisation</label><input type="text" id="sFloor" placeholder="ex: 3e étage"></div>
+        <div class="form-group"><label>Code porte</label><input type="text" id="sDoorCodes"></div>
+        <div class="form-group"><label>Description</label><textarea id="sDescription" rows="2"></textarea></div>
+        <div class="form-group"><label>Téléphone direct</label><input type="text" id="sPhone"></div>
+        <div class="form-actions"><button type="button" class="btn btn-secondary" onclick="closeModal('serviceModal')">Annuler</button><button type="submit" class="btn btn-primary">Enregistrer</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Contact -->
+  <div id="contactModal" class="modal hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2>Signaler une erreur ou suggérer</h2>
+        <button class="modal-close" onclick="closeModal('contactModal')">&times;</button>
+      </div>
+      <form id="contactForm" onsubmit="sendContact(event)">
+        <div class="form-group"><label>Votre nom</label><input type="text" id="cName" required></div>
+        <div class="form-group"><label>Votre email</label><input type="email" id="cEmail" required></div>
+        <div class="form-group"><label>Message</label><textarea id="cMessage" rows="4" required></textarea></div>
+        <div class="form-actions"><button type="button" class="btn btn-secondary" onclick="closeModal('contactModal')">Annuler</button><button type="submit" class="btn btn-primary">Envoyer</button></div>
       </form>
     </div>
   </div>

@@ -24,9 +24,10 @@ function showView(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
   const navItems = document.querySelectorAll('.nav-item');
-  const idx = ['hospitals','recherche','infos'].indexOf(name);
+  const idx = ['hospitals','recherche','contact','inbox','infos'].indexOf(name);
   if (navItems[idx]) navItems[idx].classList.add('active');
   if (name === 'hospitals') loadHospitals();
+  if (name === 'inbox') loadInbox();
   if (window.innerWidth <= 768) { toggleSidebar(); }
   return false;
 }
@@ -82,6 +83,65 @@ function updateAdminUI() {
   document.getElementById('adminToggle').classList.toggle('active', admin);
   document.getElementById('adminBadge').classList.toggle('hidden', !admin);
   document.getElementById('addBtn').style.display = admin ? 'inline-flex' : 'none';
+  document.getElementById('navInbox').classList.toggle('hidden', !admin);
+  if (admin) loadInboxCount();
+}
+
+// ===== CONTACT =====
+async function sendContact(e) {
+  e.preventDefault();
+  const data = {
+    name: document.getElementById('contactName').value,
+    email: document.getElementById('contactEmail').value,
+    subject: document.getElementById('contactSubject').value,
+    message: document.getElementById('contactMessage').value,
+  };
+  await api('/api/contact', { method: 'POST', body: JSON.stringify(data) });
+  document.getElementById('contactForm').reset();
+  document.getElementById('contactForm').style.display = 'none';
+  document.getElementById('contactSuccess').classList.remove('hidden');
+}
+
+// ===== INBOX =====
+async function loadInbox() {
+  const messages = await api('/api/messages');
+  const container = document.getElementById('inboxList');
+  if (messages.length === 0) {
+    container.innerHTML = '<div class="empty-state">Aucun message reçu</div>';
+    return;
+  }
+  container.innerHTML = messages.map(m => `
+    <div class="inbox-card ${m.read ? '' : 'unread'}" onclick="markRead(${m.id})">
+      <h4>${esc(m.subject || 'Sans sujet')}</h4>
+      <div class="inbox-meta">
+        <span>De: ${esc(m.name)} (${esc(m.email)})</span>
+        <span>${m.created_at}</span>
+      </div>
+      <div class="inbox-body">${esc(m.message)}</div>
+      <div class="inbox-actions">
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteMessage(${m.id})">🗑️ Supprimer</button>
+      </div>
+    </div>
+  `).join('');
+  loadInboxCount();
+}
+
+async function loadInboxCount() {
+  try {
+    const messages = await api('/api/messages');
+    document.getElementById('inboxCount').textContent = messages.filter(m => !m.read).length;
+  } catch {}
+}
+
+async function markRead(id) {
+  await api(`/api/messages/${id}/read`, { method: 'PUT' });
+  loadInbox();
+}
+
+async function deleteMessage(id) {
+  if (!confirm('Supprimer ce message ?')) return;
+  await api(`/api/messages/${id}`, { method: 'DELETE' });
+  loadInbox();
 }
 
 // ===== SEARCH =====
