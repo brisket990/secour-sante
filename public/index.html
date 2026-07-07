@@ -33,6 +33,9 @@
         <span class="nav-icon">📬</span><span>Messages reçus</span>
         <span class="nav-badge" id="inboxCount">0</span>
       </a>
+      <a class="nav-item" href="#" onclick="return showView('grandegarde')">
+        <span class="nav-icon">🛡️</span><span>Grande garde</span>
+      </a>
       <a class="nav-item" href="#" onclick="return showView('infos')">
         <span class="nav-icon">ℹ️</span><span>À propos</span>
       </a>
@@ -136,6 +139,33 @@
           <p>Retours des utilisateurs</p>
         </div>
         <div id="inboxList" class="inbox-list"></div>
+      </div>
+
+      <!-- Vue Grande garde -->
+      <div id="view-grandegarde" class="view">
+        <div class="view-header">
+          <h2>🛡️ Grande garde</h2>
+          <p>Procédures et protocoles</p>
+        </div>
+        <div class="about-card" style="max-width:600px">
+          <div class="gg-links">
+            <a class="gg-link" href="/pdf/neurochirurgicales.pdf" target="_blank">
+              <span class="gg-icon">🧠</span>
+              <span class="gg-title">Neurochirurgicales</span>
+              <span class="gg-arrow">→</span>
+            </a>
+            <a class="gg-link" href="/pdf/thrombectomie.pdf" target="_blank">
+              <span class="gg-icon">🩸</span>
+              <span class="gg-title">Thrombectomie</span>
+              <span class="gg-arrow">→</span>
+            </a>
+            <a class="gg-link" href="/pdf/hemorragies-delivrance.pdf" target="_blank">
+              <span class="gg-icon">🆘</span>
+              <span class="gg-title">Hémorragies de la délivrance</span>
+              <span class="gg-arrow">→</span>
+            </a>
+          </div>
+        </div>
       </div>
 
       <!-- Vue Infos -->

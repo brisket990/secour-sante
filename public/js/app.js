@@ -28,7 +28,7 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
-  const idx = ['hospitals','recherche','contact','inbox','infos'].indexOf(name);
+  const idx = ['hospitals','recherche','contact','inbox','grandegarde','infos'].indexOf(name);
   document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
   if (name === 'hospitals') loadHospitals();
   if (name === 'inbox') loadInbox();
