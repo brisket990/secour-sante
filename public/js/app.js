@@ -13,7 +13,12 @@ function api(url, opts = {}) {
   if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
   return fetch(url, { headers, ...opts }).then(async res => {
     if (res.status === 401) { logout(); throw new Error('Session expirée'); }
-    if (!res.ok) { const e = await res.text(); throw new Error(e); }
+    if (!res.ok) {
+      let msg;
+      try { const j = await res.json(); msg = j.error || j.message || res.statusText; }
+      catch { msg = await res.text(); }
+      throw new Error(msg);
+    }
     return res.json();
   });
 }

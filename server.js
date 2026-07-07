@@ -188,6 +188,12 @@ app.delete('/api/services/:id', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// Global error handler (returns JSON)
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ error: err.message || 'Erreur serveur' });
+});
+
 console.log('DB mode:', process.env.TURSO_DATABASE_URL ? 'Turso' : 'Local sql.js');
 
 initialize().then(() => {
