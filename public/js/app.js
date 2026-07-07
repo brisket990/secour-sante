@@ -198,7 +198,7 @@ async function doRegister(e) {
 
 function updateAdminUI() {
   const admin = isAdmin();
-  document.getElementById('adminText').textContent = admin ? 'Admin ✓' : (authToken ? 'User' : 'Admin');
+  document.getElementById('adminText').textContent = admin ? 'Admin ✓' : 'Admin';
   document.getElementById('adminToggle').classList.toggle('active', admin);
   document.getElementById('adminBadge').classList.toggle('hidden', !admin);
   document.getElementById('addBtn').style.display = admin ? '' : 'none';
@@ -206,6 +206,16 @@ function updateAdminUI() {
   document.getElementById('navInbox').classList.toggle('hidden', !admin);
   document.getElementById('navCandidatures').classList.toggle('hidden', !admin);
   if (admin) { loadInboxCount(); loadCandidaturesCount(); }
+
+  // User info in sidebar footer
+  const ui = document.getElementById('userInfo');
+  const un = document.getElementById('userInfoName');
+  if (authToken && !admin && userInfo) {
+    ui.classList.remove('hidden');
+    un.textContent = `${userInfo.prenom} ${userInfo.nom} (${userInfo.smur})`;
+  } else {
+    ui.classList.add('hidden');
+  }
 }
 
 // ===== HOSPITALS (accent-insensitive) =====
@@ -413,6 +423,7 @@ async function loadCandidatures() {
       <div class="inbox-actions">
         <button class="btn btn-sm btn-success" onclick="approveUser(${u.id})">✅ Valider</button>
         <button class="btn btn-sm btn-danger" onclick="if(confirm('Refuser cette candidature ?')) rejectUser(${u.id})">❌ Refuser</button>
+        <button class="btn btn-sm btn-outline" onclick="if(confirm('Promouvoir ${esc(u.prenom)} ${esc(u.nom)} en administrateur ?')) promoteUser(${u.id})">👑 Admin</button>
       </div>
     </div>
   `).join('');
@@ -433,6 +444,13 @@ async function approveUser(id) {
 
 async function rejectUser(id) {
   await api(`/api/users/${id}/reject`, { method: 'DELETE' });
+  loadCandidatures();
+  loadCandidaturesCount();
+}
+
+async function promoteUser(id) {
+  await api(`/api/users/${id}/promote`, { method: 'PUT' });
+  await api(`/api/users/${id}/approve`, { method: 'PUT' });
   loadCandidatures();
   loadCandidaturesCount();
 }

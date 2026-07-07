@@ -91,6 +91,10 @@
       </a>
     </nav>
     <div class="sidebar-footer">
+      <div id="userInfo" class="user-info hidden">
+        <span class="user-info-name" id="userInfoName"></span>
+        <button class="admin-btn" onclick="logout()" style="font-size:0.75rem">Déconnexion</button>
+      </div>
       <button id="adminToggle" class="admin-btn" onclick="toggleAdmin()">
         <span class="nav-icon">🔒</span><span id="adminText">Admin</span>
       </button>

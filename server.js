@@ -81,6 +81,11 @@ app.put('/api/users/:id/approve', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+app.put('/api/users/:id/promote', requireAuth, async (req, res) => {
+  await run("UPDATE users SET role = 'admin' WHERE id = ?", [req.params.id]);
+  res.json({ success: true });
+});
+
 app.delete('/api/users/:id/reject', requireAuth, async (req, res) => {
   await run('DELETE FROM users WHERE id = ?', [req.params.id]);
   res.json({ success: true });
