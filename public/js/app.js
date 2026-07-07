@@ -204,16 +204,17 @@ let quickTimer;
 function quickSearch() {
   clearTimeout(quickTimer);
   quickTimer = setTimeout(() => {
-    const q = normalize(document.getElementById('quickSearchInput').value);
+    const raw = document.getElementById('quickSearchInput').value;
+    const q = normalize(raw);
     const container = document.getElementById('quickResults');
     if (!q) { container.innerHTML = ''; return; }
     const results = allHospitals.filter(h =>
       normalize(h.name).includes(q) || normalize(h.address).includes(q) ||
       normalize(h.phone).includes(q)
     );
-    // Also search via API for service-level matches
+    // Also search via API for service-level matches (sends raw input for server-side accent-insensitive search)
     if (results.length === 0) {
-      api(`/api/hospitals?search=${encodeURIComponent(q)}`).then(hs => {
+      api(`/api/hospitals?search=${encodeURIComponent(raw)}`).then(hs => {
         container.innerHTML = hs.length === 0 ? '<div class="empty-state">Aucun résultat</div>'
           : hs.map(h => `<div class="result-card" onclick="selectHospital(${h.id})"><h4>${esc(h.name)}</h4><p>${esc(h.address)}</p></div>`).join('');
       });

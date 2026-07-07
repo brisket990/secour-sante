@@ -38,7 +38,7 @@ app.post('/api/logout', (req, res) => {
 });
 
 app.get('/api/hospitals', (req, res) => {
-  const { search } = req.query;
+  let { search } = req.query;
   let hospitals;
   if (search) {
     hospitals = all(
@@ -48,6 +48,19 @@ app.get('/api/hospitals', (req, res) => {
        ORDER BY h.name`,
       [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`]
     );
+    if (hospitals.length === 0) {
+      // Fallback accent-insensitive search
+      const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const q = norm(search);
+      const allH = all(`SELECT DISTINCT h.id, h.name, h.address, h.phone, h.lat, h.lng, GROUP_CONCAT(s.name, '||') AS svc_names, GROUP_CONCAT(s.description, '||') AS svc_descs FROM hospitals h LEFT JOIN services s ON s.hospital_id = h.id GROUP BY h.id ORDER BY h.name`);
+      hospitals = allH.filter(h =>
+        norm(h.name).includes(q) || norm(h.address || '').includes(q) ||
+        norm(h.phone || '').includes(q) ||
+        norm(h.svc_names || '').includes(q) || norm(h.svc_descs || '').includes(q)
+      );
+      // Remove extra fields before sending
+      hospitals = hospitals.map(({ svc_names, svc_descs, ...rest }) => rest);
+    }
   } else {
     hospitals = all('SELECT * FROM hospitals ORDER BY name');
   }
