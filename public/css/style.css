@@ -1,121 +1,291 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #f0f4f8;
-  color: #1a202c;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  background: #f5f7fa;
+  color: #1a2332;
   min-height: 100vh;
 }
 
-header {
-  background: linear-gradient(135deg, #1a365d, #2b6cb0);
+/* En-tête APHP */
+.header-top {
+  background: #002854;
   color: white;
-  padding: 1.5rem 2rem;
-  text-align: center;
+  padding: 0.5rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
 }
-header h1 { font-size: 1.8rem; }
-.subtitle { opacity: 0.85; margin-top: 0.3rem; font-size: 0.95rem; }
+.header-top a {
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  margin-left: 1.5rem;
+}
+.header-top a:hover { color: white; }
+.header-top-links { display: flex; align-items: center; }
 
+.header-main {
+  background: white;
+  padding: 0.8rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e8edf3;
+  box-shadow: 0 2px 8px rgba(0,40,84,0.08);
+}
+.header-main .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.header-main .brand-icon {
+  background: #002854;
+  color: white;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.header-main .brand-text h1 {
+  font-size: 1.1rem;
+  color: #002854;
+  font-weight: 600;
+}
+.header-main .brand-text small {
+  font-size: 0.7rem;
+  color: #6b7a8f;
+  display: block;
+}
+.header-main .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+/* Barre d'outils */
 .toolbar {
+  background: white;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #e8edf3;
   display: flex;
   gap: 1rem;
-  padding: 1rem 2rem;
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
+  align-items: center;
   position: sticky;
   top: 0;
   z-index: 10;
-  align-items: center;
 }
 .toolbar input {
   flex: 1;
-  padding: 0.6rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 1rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.toolbar input:focus { border-color: #2b6cb0; }
-
-.btn {
-  padding: 0.6rem 1.2rem;
-  border: none;
+  padding: 0.65rem 1rem;
+  border: 2px solid #e0e6ed;
   border-radius: 8px;
   font-size: 0.9rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: opacity 0.2s;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #f8faff;
 }
-.btn:hover { opacity: 0.85; }
-.btn-primary { background: #2b6cb0; color: white; }
-.btn-secondary { background: #718096; color: white; }
-.btn-danger { background: #e53e3e; color: white; }
-.btn-success { background: #38a169; color: white; }
-.btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
+.toolbar input:focus { border-color: #002854; background: white; }
 
+/* Layout */
 main { display: flex; padding: 1.5rem 2rem; gap: 2rem; }
-.hospital-list { flex: 1; }
+.hospital-list { flex: 1; min-width: 280px; }
 .hospital-detail { flex: 1.5; }
 
+/* Cartes hôpitaux */
 .hospital-card {
   background: white;
   border-radius: 10px;
   padding: 1rem 1.2rem;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.7rem;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  transition: transform 0.15s, box-shadow 0.15s;
-  border-left: 4px solid #2b6cb0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: all 0.2s;
+  border: 1px solid #e8edf3;
+  border-left: 4px solid #002854;
+  position: relative;
 }
-.hospital-card:hover { transform: translateX(3px); box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
-.hospital-card h3 { font-size: 1rem; margin-bottom: 0.25rem; }
-.hospital-card p { font-size: 0.85rem; color: #4a5568; }
+.hospital-card:hover {
+  box-shadow: 0 4px 12px rgba(0,40,84,0.12);
+  transform: translateX(3px);
+  border-color: #002854;
+}
+.hospital-card.active {
+  background: #f0f5ff;
+  border-left-color: #0066cc;
+}
+.hospital-card h3 {
+  font-size: 0.95rem;
+  color: #002854;
+  margin-bottom: 0.2rem;
+  font-weight: 600;
+}
+.hospital-card .addr {
+  font-size: 0.8rem;
+  color: #6b7a8f;
+}
+.hospital-card .phone {
+  font-size: 0.75rem;
+  color: #8899aa;
+  margin-top: 0.2rem;
+}
 
+/* Détail hôpital */
 .detail-header {
   background: white;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid #e8edf3;
   margin-bottom: 1rem;
 }
-.detail-header h2 { font-size: 1.4rem; margin-bottom: 0.5rem; }
-.detail-header p { font-size: 0.9rem; color: #4a5568; margin-bottom: 0.3rem; }
+.detail-header h2 {
+  font-size: 1.3rem;
+  color: #002854;
+  margin-bottom: 0.8rem;
+  font-weight: 700;
+}
+.detail-header .info-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #4a5a6e;
+  margin-bottom: 0.4rem;
+}
+.detail-header .info-line .icon { font-size: 1rem; }
 .detail-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
 
+/* Services */
+.services-section { margin-top: 0.5rem; }
+.services-section h3 {
+  font-size: 1rem;
+  color: #002854;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e8edf3;
+}
 .service-card {
   background: white;
   border-radius: 10px;
   padding: 1rem 1.2rem;
-  margin-bottom: 0.7rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  border-left: 4px solid #38a169;
+  margin-bottom: 0.6rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  border: 1px solid #e8edf3;
+  border-left: 4px solid #00a86b;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  transition: box-shadow 0.2s;
 }
-.service-info h4 { font-size: 1rem; margin-bottom: 0.25rem; }
-.service-info p { font-size: 0.85rem; color: #4a5568; }
-.service-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
-.service-actions button { background: none; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.3rem 0.6rem; cursor: pointer; font-size: 0.8rem; transition: background 0.15s; }
-.service-actions button:hover { background: #edf2f7; }
+.service-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.service-info h4 { font-size: 0.9rem; color: #1a2332; margin-bottom: 0.2rem; }
+.service-info p { font-size: 0.8rem; color: #6b7a8f; margin-top: 0.15rem; }
+.service-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
+.service-actions button {
+  background: none;
+  border: 1px solid #e0e6ed;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.15s;
+  color: #4a5a6e;
+}
+.service-actions button:hover { background: #f0f5ff; border-color: #002854; }
 
 .badge {
   display: inline-block;
-  background: #ebf8ff;
-  color: #2b6cb0;
-  font-size: 0.75rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 12px;
-  margin-top: 0.3rem;
+  background: #e8f4fd;
+  color: #0066cc;
+  font-size: 0.7rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 10px;
+  font-weight: 500;
 }
 
-.hidden { display: none !important; }
+/* Boutons */
+.btn {
+  padding: 0.55rem 1.1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+.btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: #002854; color: white; }
+.btn-primary:hover { background: #003d73; }
+.btn-secondary { background: #e8edf3; color: #1a2332; }
+.btn-secondary:hover { background: #d5dde8; }
+.btn-danger { background: #dc3545; color: white; }
+.btn-success { background: #00a86b; color: white; }
+.btn-success:hover { background: #008f5a; }
+.btn-sm { padding: 0.35rem 0.7rem; font-size: 0.78rem; }
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid #002854;
+  color: #002854;
+}
+.btn-outline:hover { background: #002854; color: white; }
 
-/* Modal */
+/* Login modal */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,40,84,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.login-overlay.hidden { display: none; }
+.login-box {
+  background: white;
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 380px;
+  max-width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.login-box .lock-icon {
+  width: 64px;
+  height: 64px;
+  background: #e8f4fd;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.8rem;
+}
+.login-box h2 { color: #002854; margin-bottom: 0.3rem; font-size: 1.2rem; }
+.login-box p { color: #6b7a8f; font-size: 0.85rem; margin-bottom: 1.2rem; }
+.login-box input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 2px solid #e0e6ed;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  text-align: center;
+}
+.login-box input:focus { border-color: #002854; }
+.login-box .error { color: #dc3545; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
+
+/* Modal CRUD */
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,40,84,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -124,25 +294,27 @@ main { display: flex; padding: 1.5rem 2rem; gap: 2rem; }
 .modal.hidden { display: none; }
 .modal-content {
   background: white;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 2rem;
   width: 90%;
-  max-width: 500px;
+  max-width: 520px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
-.modal-content h2 { margin-bottom: 1rem; }
-.modal-content label { display: block; font-size: 0.85rem; font-weight: 600; margin-top: 0.8rem; margin-bottom: 0.25rem; color: #2d3748; }
+.modal-content h2 { color: #002854; margin-bottom: 1rem; font-size: 1.15rem; }
+.modal-content label { display: block; font-size: 0.8rem; font-weight: 600; margin-top: 0.7rem; margin-bottom: 0.2rem; color: #4a5a6e; }
 .modal-content input, .modal-content textarea {
   width: 100%;
-  padding: 0.5rem 0.7rem;
-  border: 2px solid #e2e8f0;
+  padding: 0.55rem 0.7rem;
+  border: 2px solid #e0e6ed;
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   outline: none;
+  transition: border-color 0.2s;
 }
-.modal-content input:focus, .modal-content textarea:focus { border-color: #2b6cb0; }
+.modal-content input:focus, .modal-content textarea:focus { border-color: #002854; }
 .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.2rem; }
 .close {
   position: absolute;
@@ -150,20 +322,64 @@ main { display: flex; padding: 1.5rem 2rem; gap: 2rem; }
   top: 1rem;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #a0aec0;
+  color: #aab5c3;
   line-height: 1;
+  transition: color 0.2s;
 }
-.close:hover { color: #4a5568; }
+.close:hover { color: #1a2332; }
+
+/* Footer */
+footer {
+  background: #002854;
+  color: rgba(255,255,255,0.7);
+  text-align: center;
+  padding: 1.5rem;
+  font-size: 0.8rem;
+  margin-top: 2rem;
+}
+footer strong { color: white; }
 
 .empty-state {
   text-align: center;
-  color: #a0aec0;
+  color: #aab5c3;
   padding: 3rem 1rem;
 }
-.empty-state p { font-size: 1.1rem; }
 
+/* Responsive */
 @media (max-width: 768px) {
+  .header-top { display: none; }
+  .header-main { padding: 0.6rem 1rem; }
+  .header-main .brand-text h1 { font-size: 0.95rem; }
   main { flex-direction: column; padding: 1rem; }
-  .toolbar { flex-direction: column; padding: 1rem; }
+  .toolbar { padding: 0.8rem 1rem; }
   .toolbar input { width: 100%; }
+  .hospital-list { min-width: unset; }
+}
+
+/* Bouton admin en haut à droite */
+.admin-btn {
+  background: none;
+  border: 1.5px solid #002854;
+  color: #002854;
+  border-radius: 6px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+.admin-btn:hover { background: #002854; color: white; }
+.admin-btn.active { background: #002854; color: white; }
+
+/* Tooltip admin */
+.admin-badge {
+  display: inline-block;
+  background: #ffc107;
+  color: #1a2332;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-left: 0.5rem;
+  vertical-align: middle;
 }

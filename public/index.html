@@ -3,24 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SecourSanté - Annuaire Hospitalier</title>
+  <title>SecourSanté - Annuaire AP-HP</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header>
-    <h1>🚑 SecourSanté</h1>
-    <p class="subtitle">Annuaire des services hospitaliers pour ambulances de réanimation</p>
-  </header>
-
-  <div class="toolbar">
-    <input type="text" id="searchInput" placeholder="Rechercher un hôpital, un service..." oninput="searchHospitals()">
-    <button class="btn btn-primary" onclick="showHospitalModal()">+ Ajouter un hôpital</button>
+  <!-- Barre APHP -->
+  <div class="header-top">
+    <span>Assistance Publique - Hôpitaux de Paris</span>
+    <div class="header-top-links">
+      <a href="https://www.aphp.fr" target="_blank">aphp.fr</a>
+      <a href="https://mon.aphp.fr" target="_blank">mon AP-HP</a>
+    </div>
   </div>
 
+  <!-- En-tête -->
+  <div class="header-main">
+    <div class="brand">
+      <div class="brand-icon">SS</div>
+      <div class="brand-text">
+        <h1>SecourSanté</h1>
+        <small>Annuaire des services de réanimation</small>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="adminStatus" class="admin-badge hidden">Admin</span>
+      <button id="adminToggle" class="admin-btn" onclick="toggleAdmin()">🔑 Admin</button>
+    </div>
+  </div>
+
+  <!-- Barre d'outils -->
+  <div class="toolbar">
+    <input type="text" id="searchInput" placeholder="Rechercher un hôpital, un service..." oninput="searchHospitals()">
+    <button id="addHospitalBtn" class="btn btn-primary hidden" onclick="showHospitalModal()">+ Ajouter un hôpital</button>
+  </div>
+
+  <!-- Contenu -->
   <main>
     <div id="hospitalList" class="hospital-list"></div>
     <div id="hospitalDetail" class="hospital-detail hidden"></div>
   </main>
+
+  <!-- Footer -->
+  <footer>
+    <strong>SecourSanté</strong> — Outil interne pour ambulances de réanimation · <a href="https://www.aphp.fr" style="color:rgba(255,255,255,0.7)">AP-HP</a>
+  </footer>
+
+  <!-- Login overlay -->
+  <div id="loginOverlay" class="login-overlay hidden">
+    <div class="login-box">
+      <div class="lock-icon">🔒</div>
+      <h2>Accès administrateur</h2>
+      <p>Entrez le mot de passe pour modifier les données</p>
+      <input type="password" id="loginPassword" placeholder="Mot de passe" onkeydown="if(event.key==='Enter') doLogin()">
+      <p id="loginError" class="error">Mot de passe incorrect</p>
+      <div style="margin-top:1rem;display:flex;gap:0.5rem;justify-content:center">
+        <button class="btn btn-secondary" onclick="closeLogin()">Annuler</button>
+        <button class="btn btn-primary" onclick="doLogin()">Se connecter</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal Hôpital -->
   <div id="hospitalModal" class="modal hidden">
@@ -31,19 +72,14 @@
         <input type="hidden" id="hId">
         <label>Nom de l'hôpital *</label>
         <input type="text" id="hName" required>
-
         <label>Adresse *</label>
         <input type="text" id="hAddress" required>
-
         <label>Téléphone</label>
         <input type="text" id="hPhone">
-
         <label>Latitude</label>
         <input type="number" step="any" id="hLat">
-
         <label>Longitude</label>
         <input type="number" step="any" id="hLng">
-
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('hospitalModal')">Annuler</button>
           <button type="submit" class="btn btn-primary">Enregistrer</button>
@@ -62,16 +98,12 @@
         <input type="hidden" id="sHospitalId">
         <label>Nom du service *</label>
         <input type="text" id="sName" required>
-
         <label>Étage / Localisation</label>
         <input type="text" id="sFloor" placeholder="ex: 3e étage, Pavillon A">
-
         <label>Description</label>
         <textarea id="sDescription" rows="2"></textarea>
-
         <label>Téléphone direct</label>
         <input type="text" id="sPhone">
-
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('serviceModal')">Annuler</button>
           <button type="submit" class="btn btn-primary">Enregistrer</button>

@@ -1,12 +1,67 @@
 let selectedId = null;
+let authToken = localStorage.getItem('token') || null;
 
-async function api(url, opts = {}) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opts
+function isAdmin() { return !!authToken; }
+
+function api(url, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  return fetch(url, { headers, ...opts }).then(async res => {
+    if (res.status === 401) { logout(); throw new Error('Session expirée'); }
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+}
+
+// --- Admin ---
+function toggleAdmin() {
+  if (isAdmin()) {
+    if (confirm('Se déconnecter ?')) logout();
+  } else {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('loginPassword').focus();
+  }
+}
+
+function closeLogin() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+}
+
+async function doLogin() {
+  const password = document.getElementById('loginPassword').value;
+  try {
+    const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password }) });
+    authToken = res.token;
+    localStorage.setItem('token', res.token);
+    closeLogin();
+    updateAdminUI();
+    if (selectedId) selectHospital(selectedId);
+  } catch {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+function logout() {
+  if (authToken) {
+    api('/api/logout', { method: 'POST' }).catch(() => {});
+  }
+  authToken = null;
+  localStorage.removeItem('token');
+  updateAdminUI();
+  loadHospitals();
+  document.getElementById('hospitalDetail').classList.add('hidden');
+  selectedId = null;
+}
+
+function updateAdminUI() {
+  const admin = isAdmin();
+  document.getElementById('adminToggle').textContent = admin ? '🔓 Admin' : '🔑 Admin';
+  document.getElementById('adminToggle').className = 'admin-btn' + (admin ? ' active' : '');
+  document.getElementById('adminStatus').classList.toggle('hidden', !admin);
+  document.getElementById('addHospitalBtn').classList.toggle('hidden', !admin);
+  if (selectedId) selectHospital(selectedId);
 }
 
 // --- Recherche ---
@@ -16,7 +71,7 @@ function searchHospitals() {
   searchTimer = setTimeout(loadHospitals, 300);
 }
 
-// --- Liste des hôpitaux ---
+// --- Liste ---
 async function loadHospitals() {
   const search = document.getElementById('searchInput').value;
   const q = search ? `?search=${encodeURIComponent(search)}` : '';
@@ -28,57 +83,64 @@ async function loadHospitals() {
   }
   container.innerHTML = hospitals.map(h => `
     <div class="hospital-card ${selectedId === h.id ? 'active' : ''}" onclick="selectHospital(${h.id})">
-      <h3>${escapeHtml(h.name)}</h3>
-      <p>${escapeHtml(h.address)}</p>
-      <p style="font-size:0.8rem;color:#718096">${h.phone || 'Tél. non renseigné'}</p>
+      <h3>${esc(h.name)}</h3>
+      <div class="addr">${esc(h.address)}</div>
+      <div class="phone">${h.phone || ''}</div>
     </div>
   `).join('');
 }
 
-// --- Détail d'un hôpital ---
+// --- Détail ---
 async function selectHospital(id) {
   selectedId = id;
   const h = await api(`/api/hospitals/${id}`);
   const detail = document.getElementById('hospitalDetail');
   detail.classList.remove('hidden');
 
-  let coords = '';
+  let gpsBtns = '';
   if (h.lat && h.lng) {
-    coords = `
+    gpsBtns = `
       <div class="detail-actions">
-        <button class="btn btn-success" onclick="openGPS(${h.lat}, ${h.lng}, '${escapeHtml(h.name)}')">📍 Naviguer (GPS)</button>
-        <button class="btn btn-secondary btn-sm" onclick="openGPSWaze(${h.lat}, ${h.lng})">🗺️ Waze</button>
+        <button class="btn btn-success btn-sm" onclick="openGPS(${h.lat}, ${h.lng}, '${escAttr(h.name)}')">📍 Naviguer</button>
+        <button class="btn btn-outline btn-sm" onclick="openGPSWaze(${h.lat}, ${h.lng})">🗺️ Waze</button>
       </div>`;
   }
 
+  const admin = isAdmin();
+  const adminActions = admin ? `
+    <div class="detail-actions">
+      <button class="btn btn-primary btn-sm" onclick="showHospitalModal(${h.id})">✏️ Modifier</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteHospital(${h.id})">🗑️ Supprimer</button>
+      <button class="btn btn-primary btn-sm" onclick="showServiceModal(${h.id})">+ Ajouter un service</button>
+    </div>` : '';
+
   detail.innerHTML = `
     <div class="detail-header">
-      <h2>${escapeHtml(h.name)}</h2>
-      <p>📌 ${escapeHtml(h.address)}</p>
-      <p>📞 ${h.phone || 'Non renseigné'}</p>
-      ${coords}
-      <div class="detail-actions">
-        <button class="btn btn-primary btn-sm" onclick="showHospitalModal(${h.id})">✏️ Modifier</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteHospital(${h.id})">🗑️ Supprimer</button>
-        <button class="btn btn-primary btn-sm" onclick="showServiceModal(${h.id})">+ Ajouter un service</button>
-      </div>
+      <h2>${esc(h.name)}</h2>
+      <div class="info-line"><span class="icon">📍</span> ${esc(h.address)}</div>
+      <div class="info-line"><span class="icon">📞</span> ${h.phone || 'Non renseigné'}</div>
+      ${gpsBtns}
+      ${adminActions}
     </div>
-    <h3 style="margin-bottom:0.8rem;color:#2d3748">Services</h3>
-    <div id="servicesList">
-      ${h.services.length === 0 ? '<div class="empty-state"><p>Aucun service renseigné</p></div>' :
-        h.services.map(s => `
-          <div class="service-card">
-            <div class="service-info">
-              <h4>${escapeHtml(s.name)} ${s.floor ? `<span class="badge">📍 ${escapeHtml(s.floor)}</span>` : ''}</h4>
-              ${s.description ? `<p>${escapeHtml(s.description)}</p>` : ''}
-              ${s.phone ? `<p>📞 ${escapeHtml(s.phone)}</p>` : ''}
+    <div class="services-section">
+      <h3>Services</h3>
+      <div id="servicesList">
+        ${h.services.length === 0 ? '<div class="empty-state"><p>Aucun service renseigné</p></div>' :
+          h.services.map(s => `
+            <div class="service-card">
+              <div class="service-info">
+                <h4>${esc(s.name)} ${s.floor ? `<span class="badge">📍 ${esc(s.floor)}</span>` : ''}</h4>
+                ${s.description ? `<p>${esc(s.description)}</p>` : ''}
+                ${s.phone ? `<p>📞 ${esc(s.phone)}</p>` : ''}
+              </div>
+              ${admin ? `
+              <div class="service-actions">
+                <button onclick="showServiceModal(${h.id}, ${s.id})">✏️</button>
+                <button onclick="deleteService(${s.id})">🗑️</button>
+              </div>` : ''}
             </div>
-            <div class="service-actions">
-              <button onclick="showServiceModal(${h.id}, ${s.id})">✏️</button>
-              <button onclick="deleteService(${s.id})">🗑️</button>
-            </div>
-          </div>
-        `).join('')}
+          `).join('')}
+      </div>
     </div>
   `;
   loadHospitals();
@@ -86,13 +148,10 @@ async function selectHospital(id) {
 
 // --- GPS ---
 function openGPS(lat, lng, name) {
-  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
-  window.open(url, '_blank');
+  window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank');
 }
-
 function openGPSWaze(lat, lng) {
-  const url = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
-  window.open(url, '_blank');
+  window.open(`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
 }
 
 // --- Modal Hôpital ---
@@ -190,23 +249,23 @@ async function deleteService(id) {
   if (hId) selectHospital(hId);
 }
 
-// --- Utilitaires ---
 function closeModal(id) {
   document.getElementById(id).classList.add('hidden');
 }
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+function escAttr(str) {
+  return str.replace(/['"&<>]/g, c => ({ "'": '&#39;', '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
-// --- Fermer modals en cliquant dehors ---
 document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('modal')) {
-    e.target.classList.add('hidden');
-  }
+  if (e.target.classList.contains('modal')) e.target.classList.add('hidden');
+  if (e.target.classList.contains('login-overlay')) closeLogin();
 });
 
-// --- Initialisation ---
+updateAdminUI();
 loadHospitals();
