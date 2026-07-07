@@ -2,6 +2,7 @@ const express = require('express');
 require('express-async-errors');
 const path = require('path');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const { initialize, get, all, run, reseed } = require('./database');
 
@@ -10,23 +11,30 @@ BigInt.prototype.toJSON = function() { return Number(this); };
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const JWT_SECRET = process.env.JWT_SECRET || 'readirect-secret-change-in-prod';
 
-const tokens = new Set();
-const userTokens = new Map(); // token -> { nom, prenom, email, smur, role }
+function signToken(payload) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+}
+
+function verifyToken(token) {
+  try { return jwt.verify(token, JWT_SECRET); } catch { return null; }
+}
 
 function requireAuth(req, res, next) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Non autorisé' });
-  if (tokens.has(token)) return next();
-  if (userTokens.has(token) && userTokens.get(token).role === 'admin') return next();
-  res.status(401).json({ error: 'Non autorisé' });
+  const decoded = verifyToken(req.headers.authorization?.replace('Bearer ', ''));
+  if (!decoded || decoded.role !== 'admin') {
+    return res.status(401).json({ error: 'Non autorisé' });
+  }
+  req.auth = decoded;
+  next();
 }
 
 function requireAnyAuth(req, res, next) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Connectez-vous' });
-  if (tokens.has(token) || userTokens.has(token)) return next();
-  res.status(401).json({ error: 'Token invalide' });
+  const decoded = verifyToken(req.headers.authorization?.replace('Bearer ', ''));
+  if (!decoded) return res.status(401).json({ error: 'Connectez-vous' });
+  req.auth = decoded;
+  next();
 }
 
 function hashPw(pw) {
@@ -46,18 +54,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/api/login', async (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
-    const token = crypto.randomBytes(32).toString('hex');
-    tokens.add(token);
+    const token = signToken({ role: 'admin' });
     return res.json({ token, role: 'admin' });
   }
-  // User login
   const user = await get('SELECT * FROM users WHERE email = ?', [req.body.email]);
   if (!user) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
   if (user.status !== 'approved') return res.status(403).json({ error: 'Compte en attente de validation' });
   if (!verifyPw(req.body.password, user.password)) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
-  const userToken = crypto.randomBytes(32).toString('hex');
-  userTokens.set(userToken, { nom: user.nom, prenom: user.prenom, email: user.email, smur: user.smur, role: user.role });
-  res.json({ token: userToken, role: user.role, user: { nom: user.nom, prenom: user.prenom, email: user.email, smur: user.smur } });
+  const token = signToken({ nom: user.nom, prenom: user.prenom, email: user.email, smur: user.smur, role: user.role });
+  res.json({ token, role: user.role, user: { nom: user.nom, prenom: user.prenom, email: user.email, smur: user.smur } });
 });
 
 app.post('/api/register', async (req, res) => {
@@ -94,14 +99,8 @@ app.put('/api/users/:id/role', requireAuth, async (req, res) => {
   if (!['user', 'admin'].includes(role)) {
     return res.status(400).json({ error: 'Rôle invalide' });
   }
-  const user = await get('SELECT email FROM users WHERE id = ?', [req.params.id]);
-  if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
   await run("UPDATE users SET role = ?, status = 'approved' WHERE id = ?", [role, req.params.id]);
-  // Invalidate existing session so user reconnects with new role
-  for (const [token, info] of userTokens) {
-    if (info.email === user.email) userTokens.delete(token);
-  }
-  res.json({ success: true });
+  res.json({ success: true, message: 'L\'utilisateur doit se reconnecter pour que le changement prenne effet' });
 });
 
 app.put('/api/users/:id/approve', requireAuth, async (req, res) => {
@@ -110,14 +109,8 @@ app.put('/api/users/:id/approve', requireAuth, async (req, res) => {
 });
 
 app.put('/api/users/:id/promote', requireAuth, async (req, res) => {
-  const user = await get('SELECT email FROM users WHERE id = ?', [req.params.id]);
-  if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
   await run("UPDATE users SET role = 'admin', status = 'approved' WHERE id = ?", [req.params.id]);
-  // Invalidate existing session so user reconnects with admin role
-  for (const [token, info] of userTokens) {
-    if (info.email === user.email) userTokens.delete(token);
-  }
-  res.json({ success: true });
+  res.json({ success: true, message: 'L\'utilisateur doit se reconnecter pour que le changement prenne effet' });
 });
 
 app.delete('/api/users/:id/reject', requireAuth, async (req, res) => {
@@ -131,19 +124,13 @@ app.delete('/api/users/:id', requireAuth, async (req, res) => {
 });
 
 app.get('/api/me', (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.json({ authed: false });
-  if (tokens.has(token)) return res.json({ authed: true, role: 'admin' });
-  if (userTokens.has(token)) {
-    const info = userTokens.get(token);
-    return res.json({ authed: true, role: info.role, user: info });
-  }
-  res.json({ authed: false });
+  const decoded = verifyToken(req.headers.authorization?.replace('Bearer ', ''));
+  if (!decoded) return res.json({ authed: false });
+  if (decoded.role === 'admin') return res.json({ authed: true, role: 'admin' });
+  res.json({ authed: true, role: decoded.role, user: decoded });
 });
 
 app.post('/api/logout', (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (token) { tokens.delete(token); userTokens.delete(token); }
   res.json({ success: true });
 });
 
