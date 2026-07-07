@@ -135,6 +135,37 @@ async function selectHospital(id) {
     </div>`;
   }
 
+  // Groupement par site
+  const servicesBySite = h.services.reduce((acc, s) => {
+    const site = s.building || 'Informations générales';
+    if (!acc[site]) acc[site] = [];
+    acc[site].push(s);
+    return acc;
+  }, {});
+
+  let servicesHTML = '';
+  for (const [site, services] of Object.entries(servicesBySite)) {
+    servicesHTML += `
+      <div class="site-group">
+        <div class="section-title">${esc(site)}</div>
+        ${services.map(s => `
+          <div class="service-card">
+            <div class="service-info">
+              <h4>${esc(s.name)} ${s.floor ? `<span class="badge-floor">${esc(s.floor)}</span>` : ''}</h4>
+              ${s.description ? `<p>${esc(s.description)}</p>` : ''}
+              ${s.door_codes ? `<p><strong>Code accès:</strong> ${esc(s.door_codes)}</p>` : ''}
+              ${s.phone ? `<p>📞 ${esc(s.phone)}</p>` : ''}
+            </div>
+            ${admin ? `<div class="service-actions">
+              <button onclick="showServiceModal(${h.id}, ${s.id})">✏️</button>
+              <button onclick="deleteService(${s.id})">🗑️</button>
+            </div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
   detail.innerHTML = `
     <div class="detail-header">
       <h2>${esc(h.name)}</h2>
@@ -146,23 +177,10 @@ async function selectHospital(id) {
       ${adminActions}
     </div>
     <div class="services-section">
-      <div class="section-title">Services de Réanimation & Urgences</div>
-      ${h.services.length === 0 ? '<div class="empty-state">Aucun service renseigné</div>' :
-        h.services.map(s => `
-          <div class="service-card">
-            <div class="service-info">
-              <h4>${esc(s.name)} ${s.floor ? `<span class="badge-floor">${esc(s.floor)}</span>` : ''}</h4>
-              ${s.description ? `<p>${esc(s.description)}</p>` : ''}
-              ${s.phone ? `<p>📞 ${esc(s.phone)}</p>` : ''}
-            </div>
-            ${admin ? `<div class="service-actions">
-              <button onclick="showServiceModal(${h.id}, ${s.id})">✏️</button>
-              <button onclick="deleteService(${s.id})">🗑️</button>
-            </div>` : ''}
-          </div>
-        `).join('')}
+      ${h.services.length === 0 ? '<div class="empty-state">Aucun service renseigné</div>' : servicesHTML}
     </div>
   `;
+
   loadHospitals();
 }
 

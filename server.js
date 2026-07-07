@@ -56,7 +56,7 @@ app.get('/api/hospitals', (req, res) => {
 app.get('/api/hospitals/:id', (req, res) => {
   const hospital = get('SELECT * FROM hospitals WHERE id = ?', [req.params.id]);
   if (!hospital) return res.status(404).json({ error: 'Hôpital non trouvé' });
-  hospital.services = all('SELECT * FROM services WHERE hospital_id = ? ORDER BY name', [req.params.id]);
+  hospital.services = all('SELECT * FROM services WHERE hospital_id = ? ORDER by name', [req.params.id]);
   res.json(hospital);
 });
 
@@ -87,21 +87,21 @@ app.delete('/api/hospitals/:id', requireAuth, (req, res) => {
 });
 
 app.post('/api/services', requireAuth, (req, res) => {
-  const { hospital_id, name, floor, description, phone } = req.body;
+  const { hospital_id, name, floor, building, door_codes, description, phone } = req.body;
   if (!hospital_id || !name) return res.status(400).json({ error: 'ID hôpital et nom requis' });
   const result = run(
-    'INSERT INTO services (hospital_id, name, floor, description, phone) VALUES (?, ?, ?, ?, ?)',
-    [hospital_id, name, floor || '', description || '', phone || '']
+    'INSERT INTO services (hospital_id, name, floor, building, door_codes, description, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [hospital_id, name, floor || '', building || '', door_codes || '', description || '', phone || '']
   );
   res.status(201).json({ id: result.lastInsertRowid });
 });
 
 app.put('/api/services/:id', requireAuth, (req, res) => {
-  const { name, floor, description, phone } = req.body;
+  const { name, floor, building, door_codes, description, phone } = req.body;
   if (!name) return res.status(400).json({ error: 'Nom requis' });
   run(
-    'UPDATE services SET name=?, floor=?, description=?, phone=? WHERE id=?',
-    [name, floor || '', description || '', phone || '', req.params.id]
+    'UPDATE services SET name=?, floor=?, building=?, door_codes=?, description=?, phone=? WHERE id=?',
+    [name, floor || '', building || '', door_codes || '', description || '', phone || '', req.params.id]
   );
   res.json({ success: true });
 });
@@ -113,7 +113,7 @@ app.delete('/api/services/:id', requireAuth, (req, res) => {
 
 initialize().then(() => {
   app.listen(PORT, () => {
-    console.log(`SecourSanté démarré sur http://localhost:${PORT}`);
+    console.log(`SecourSante démarré sur http://localhost:${PORT}`);
   });
 }).catch(err => {
   console.error('Erreur d\'initialisation:', err);

@@ -51,14 +51,10 @@
     <!-- Top bar -->
     <header class="topbar">
       <button class="hamburger" onclick="toggleSidebar()">☰</button>
-      <div class="topbar-search">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" placeholder="Rechercher un hôpital, un service..." oninput="searchHospitals()">
-      </div>
-      <div class="topbar-actions">
-        <span id="adminBadge" class="admin-badge hidden">Admin</span>
-        <button class="btn btn-primary btn-sm" id="addBtn" onclick="showHospitalModal()" style="display:none">+ Ajouter</button>
-      </div>
+    <div class="topbar-actions">
+      <span id="adminBadge" class="admin-badge hidden">Admin</span>
+      <button class="btn btn-primary btn-sm" id="addBtn" onclick="showHospitalModal()" style="display:none">+ Ajouter</button>
+    </div>
     </header>
 
     <!-- Content -->
