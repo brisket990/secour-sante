@@ -145,6 +145,17 @@ async function initialize() {
     saveDb();
     insertH.free();
     insertS.free();
+
+    // Seed default protocols
+    const pCount = db.exec("SELECT COUNT(*) as c FROM protocols");
+    if (!pCount[0] || pCount[0].values[0][0] === 0) {
+      const insertP = db.prepare("INSERT INTO protocols (name, icon, url, sort_order) VALUES (?, ?, ?, ?)");
+      insertP.run(["Neurochirurgicales", "🧠", "/pdf/neurochirurgicales.pdf", 0]);
+      insertP.run(["Thrombectomie", "🩸", "/pdf/thrombectomie.pdf", 1]);
+      insertP.run(["Hémorragies de la délivrance", "🆘", "/pdf/hemorragies-delivrance.pdf", 2]);
+      insertP.free();
+      saveDb();
+    }
   }
 }
 
@@ -179,6 +190,15 @@ function reseed() {
   saveDb();
   insertH.free();
   insertS.free();
+
+  // Reset protocols
+  run('DELETE FROM protocols');
+  const insertP = db.prepare("INSERT INTO protocols (name, icon, url, sort_order) VALUES (?, ?, ?, ?)");
+  insertP.run(["Neurochirurgicales", "🧠", "/pdf/neurochirurgicales.pdf", 0]);
+  insertP.run(["Thrombectomie", "🩸", "/pdf/thrombectomie.pdf", 1]);
+  insertP.run(["Hémorragies de la délivrance", "🆘", "/pdf/hemorragies-delivrance.pdf", 2]);
+  insertP.free();
+  saveDb();
 }
 
 module.exports = { initialize, get, all, run: query, reseed };
