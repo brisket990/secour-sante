@@ -416,10 +416,11 @@ document.addEventListener('keydown', e => {
   document.addEventListener('touchend', e => {
     if (window.innerWidth > 768) return;
     const sidebar = document.getElementById('sidebar');
-    if (sidebar.classList.contains('open')) return;
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
-    if (dx > 60 && Math.abs(dy) < 80) toggleSidebar();
+    if (Math.abs(dy) > 100) return;
+    if (!sidebar.classList.contains('open') && dx > 30) toggleSidebar();
+    if (sidebar.classList.contains('open') && dx < -30) toggleSidebar();
   }, { passive: true });
 })();
 
