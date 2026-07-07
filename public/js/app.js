@@ -404,6 +404,25 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// Swipe gesture for sidebar on mobile
+(function() {
+  let startX = 0, startY = 0;
+  document.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (window.innerWidth > 768) return;
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('open')) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (dx > 60 && Math.abs(dy) < 80) toggleSidebar();
+  }, { passive: true });
+})();
+
 // ===== PROTOCOLS (Grande garde) =====
 let allProtocols = [];
 
