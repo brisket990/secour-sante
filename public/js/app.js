@@ -8,12 +8,12 @@ function api(url, opts = {}) {
   if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
   return fetch(url, { headers, ...opts }).then(async res => {
     if (res.status === 401) { logout(); throw new Error('Session expirée'); }
-    if (!res.ok) throw new Error(await res.text());
+    if (!res.ok) { const e = await res.text(); throw new Error(e); }
     return res.json();
   });
 }
 
-// ===== SIDEBAR & VIEWS =====
+// ===== SIDEBAR =====
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('open');
@@ -23,13 +23,28 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
-  const navItems = document.querySelectorAll('.nav-item');
   const idx = ['hospitals','recherche','contact','inbox','infos'].indexOf(name);
-  if (navItems[idx]) navItems[idx].classList.add('active');
+  document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
   if (name === 'hospitals') loadHospitals();
   if (name === 'inbox') loadInbox();
-  if (window.innerWidth <= 768) { toggleSidebar(); }
+  if (window.innerWidth <= 768) toggleSidebar();
   return false;
+}
+
+// ===== DARK MODE =====
+if (localStorage.getItem('dark') === 'true') document.body.classList.add('dark');
+updateDarkUI();
+
+function toggleDarkMode() {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('dark', document.body.classList.contains('dark'));
+  updateDarkUI();
+}
+
+function updateDarkUI() {
+  const dark = document.body.classList.contains('dark');
+  document.getElementById('darkIcon').textContent = dark ? '☀️' : '🌙';
+  document.getElementById('darkText').textContent = dark ? 'Light mode' : 'Dark mode';
 }
 
 // ===== ADMIN =====
@@ -44,14 +59,12 @@ function toggleAdmin() {
   }
 }
 
-function closeLogin() {
-  document.getElementById('loginOverlay').classList.add('hidden');
-}
+function closeLogin() { document.getElementById('loginOverlay').classList.add('hidden'); }
 
 async function doLogin() {
-  const password = document.getElementById('loginPassword').value;
+  const pwd = document.getElementById('loginPassword').value;
   try {
-    const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password }) });
+    const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password: pwd }) });
     authToken = res.token;
     localStorage.setItem('token', res.token);
     closeLogin();
@@ -68,12 +81,8 @@ function logout() {
   localStorage.removeItem('token');
   updateAdminUI();
   loadHospitals();
-  document.getElementById('hospitalDetail').innerHTML = `
-    <div class="empty-detail">
-      <div class="empty-icon">🏥</div>
-      <h3>Sélectionnez un établissement</h3>
-      <p>Cliquez sur un hôpital dans la liste pour consulter sa fiche technique</p>
-    </div>`;
+  document.getElementById('hospitalDetail').innerHTML =
+    `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3></div>`;
   selectedId = null;
 }
 
@@ -82,9 +91,103 @@ function updateAdminUI() {
   document.getElementById('adminText').textContent = admin ? 'Admin ✓' : 'Admin';
   document.getElementById('adminToggle').classList.toggle('active', admin);
   document.getElementById('adminBadge').classList.toggle('hidden', !admin);
-  document.getElementById('addBtn').style.display = admin ? 'inline-flex' : 'none';
+  document.getElementById('addBtn').style.display = admin ? '' : 'none';
   document.getElementById('navInbox').classList.toggle('hidden', !admin);
   if (admin) loadInboxCount();
+}
+
+// ===== HOSPITALS =====
+let searchTimer;
+function searchHospitals() { clearTimeout(searchTimer); searchTimer = setTimeout(loadHospitals, 250); }
+
+async function loadHospitals() {
+  const search = document.getElementById('searchInput')?.value || '';
+  const q = search ? `?search=${encodeURIComponent(search)}` : '';
+  const hospitals = await api(`/api/hospitals${q}`);
+  document.getElementById('hospitalCount').textContent = hospitals.length;
+  document.getElementById('subtitleHospitals').textContent =
+    hospitals.length === 0 ? 'Aucun résultat' : `${hospitals.length} établissement${hospitals.length > 1 ? 's' : ''}`;
+  const container = document.getElementById('hospitalList');
+  if (!hospitals.length) { container.innerHTML = '<div class="empty-state">Aucun hôpital</div>'; return; }
+  container.innerHTML = hospitals.map(h => `
+    <div class="hospital-card ${selectedId === h.id ? 'active' : ''}" onclick="selectHospital(${h.id})">
+      <h3>${esc(h.name)}</h3>
+      <div class="addr">${esc(h.address)}</div>
+      ${h.phone ? `<div class="phone">📞 ${esc(h.phone)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+async function selectHospital(id) {
+  selectedId = id;
+  showView('hospitals');
+  const h = await api(`/api/hospitals/${id}`);
+  const admin = isAdmin();
+  const groups = {};
+  for (const s of h.services) {
+    const site = s.building || 'Général';
+    if (!groups[site]) groups[site] = [];
+    groups[site].push(s);
+  }
+  let svcHTML = '';
+  for (const [site, svcs] of Object.entries(groups)) {
+    svcHTML += `<div class="site-group"><div class="section-title">${esc(site)}</div>`;
+    svcHTML += svcs.map(s => `
+      <div class="service-card">
+        <div class="service-info">
+          <h4>${esc(s.name)} ${s.floor ? `<span class="badge-floor">${esc(s.floor)}</span>` : ''}</h4>
+          ${s.description ? `<p>${esc(s.description)}</p>` : ''}
+          ${s.door_codes ? `<p>🔑 ${esc(s.door_codes)}</p>` : ''}
+          ${s.phone ? `<p>📞 ${esc(s.phone)}</p>` : ''}
+        </div>
+        ${admin ? `<div class="service-actions">
+          <button onclick="showServiceModal(${h.id},${s.id})">✏️</button>
+          <button onclick="deleteService(${s.id})">🗑️</button>
+        </div>` : ''}
+      </div>
+    `).join('');
+    svcHTML += '</div>';
+  }
+  const gps = (h.lat && h.lng) ? `
+    <div class="detail-gps">
+      <button class="btn btn-success btn-sm" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=driving','_blank')">📍 Google</button>
+      <button class="btn btn-outline btn-sm" onclick="window.open('https://waze.com/ul?ll=${h.lat},${h.lng}&navigate=yes','_blank')">🗺️ Waze</button>
+    </div>` : '';
+  document.getElementById('hospitalDetail').innerHTML = `
+    <div class="detail-header">
+      <h2>${esc(h.name)}</h2>
+      <div class="detail-info">
+        <div class="info-line"><span class="label">Adresse:</span> ${esc(h.address)}</div>
+        <div class="info-line"><span class="label">Contact:</span> ${h.phone || 'Non renseigné'}</div>
+      </div>
+      ${gps}
+      ${admin ? `<div class="detail-admin">
+        <button class="btn btn-primary btn-sm" onclick="showHospitalModal(${h.id})">✏️ Modifier</button>
+        <button class="btn btn-danger btn-sm" onclick="if(confirm('Supprimer ?')) deleteHospital(${h.id})">🗑️ Supprimer</button>
+        <button class="btn btn-primary btn-sm" onclick="showServiceModal(${h.id})">+ Service</button>
+      </div>` : ''}
+    </div>
+    <div class="services-section">${h.services.length === 0 ? '<div class="empty-state">Aucun service</div>' : svcHTML}</div>`;
+  loadHospitals();
+}
+
+// ===== QUICK SEARCH =====
+let quickTimer;
+function quickSearch() {
+  clearTimeout(quickTimer);
+  quickTimer = setTimeout(async () => {
+    const q = document.getElementById('quickSearchInput').value.trim();
+    const container = document.getElementById('quickResults');
+    if (!q) { container.innerHTML = ''; return; }
+    const hospitals = await api(`/api/hospitals?search=${encodeURIComponent(q)}`);
+    container.innerHTML = hospitals.length === 0
+      ? '<div class="empty-state">Aucun résultat</div>'
+      : hospitals.map(h => `
+        <div class="result-card" onclick="selectHospital(${h.id})">
+          <h4>${esc(h.name)}</h4>
+          <p>${esc(h.address)}</p>
+        </div>`).join('');
+  }, 250);
 }
 
 // ===== CONTACT =====
@@ -104,172 +207,34 @@ async function sendContact(e) {
 
 // ===== INBOX =====
 async function loadInbox() {
-  const messages = await api('/api/messages');
+  const msgs = await api('/api/messages');
   const container = document.getElementById('inboxList');
-  if (messages.length === 0) {
-    container.innerHTML = '<div class="empty-state">Aucun message reçu</div>';
-    return;
-  }
-  container.innerHTML = messages.map(m => `
+  if (!msgs.length) { container.innerHTML = '<div class="empty-state">Aucun message</div>'; return; }
+  container.innerHTML = msgs.map(m => `
     <div class="inbox-card ${m.read ? '' : 'unread'}" onclick="markRead(${m.id})">
       <h4>${esc(m.subject || 'Sans sujet')}</h4>
-      <div class="inbox-meta">
-        <span>De: ${esc(m.name)} (${esc(m.email)})</span>
-        <span>${m.created_at}</span>
-      </div>
+      <div class="inbox-meta"><span>${esc(m.name)} (${esc(m.email)})</span><span>${m.created_at}</span></div>
       <div class="inbox-body">${esc(m.message)}</div>
       <div class="inbox-actions">
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteMessage(${m.id})">🗑️ Supprimer</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteMessage(${m.id})">🗑️</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
   loadInboxCount();
 }
 
 async function loadInboxCount() {
   try {
-    const messages = await api('/api/messages');
-    document.getElementById('inboxCount').textContent = messages.filter(m => !m.read).length;
+    const msgs = await api('/api/messages');
+    document.getElementById('inboxCount').textContent = msgs.filter(m => !m.read).length;
   } catch {}
 }
 
-async function markRead(id) {
-  await api(`/api/messages/${id}/read`, { method: 'PUT' });
-  loadInbox();
-}
+async function markRead(id) { await api(`/api/messages/${id}/read`, { method: 'PUT' }); loadInbox(); }
+async function deleteMessage(id) { if (!confirm('Supprimer ?')) return; await api(`/api/messages/${id}`, { method: 'DELETE' }); loadInbox(); }
 
-async function deleteMessage(id) {
-  if (!confirm('Supprimer ce message ?')) return;
-  await api(`/api/messages/${id}`, { method: 'DELETE' });
-  loadInbox();
-}
-
-// ===== SEARCH =====
-let searchTimer;
-function searchHospitals() {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(loadHospitals, 250);
-}
-
-async function loadHospitals() {
-  const search = document.getElementById('searchInput').value;
-  const q = search ? `?search=${encodeURIComponent(search)}` : '';
-  const hospitals = await api(`/api/hospitals${q}`);
-  const container = document.getElementById('hospitalList');
-  document.getElementById('hospitalCount').textContent = hospitals.length;
-  document.getElementById('subtitleHospitals').textContent = hospitals.length === 0 ? 'Aucun résultat' : `${hospitals.length} établissement${hospitals.length > 1 ? 's' : ''} trouvé${hospitals.length > 1 ? 's' : ''}`;
-  if (hospitals.length === 0) {
-    container.innerHTML = '<div class="empty-state">Aucun établissement trouvé</div>';
-    return;
-  }
-  container.innerHTML = hospitals.map(h => `
-    <div class="hospital-card ${selectedId === h.id ? 'active' : ''}" onclick="selectHospital(${h.id})">
-      <h3>${esc(h.name)}</h3>
-      <div class="addr">${esc(h.address)}</div>
-      ${h.phone ? `<div class="phone">📞 ${esc(h.phone)}</div>` : ''}
-    </div>
-  `).join('');
-}
-
-async function selectHospital(id) {
-  selectedId = id;
-  showView('hospitals');
-  const h = await api(`/api/hospitals/${id}`);
-  const detail = document.getElementById('hospitalDetail');
-  const admin = isAdmin();
-
-  let gps = '';
-  if (h.lat && h.lng) {
-    gps = `<div class="detail-gps">
-      <button class="btn btn-success btn-sm" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=driving','_blank')">📍 Navigation Google Maps</button>
-      <button class="btn btn-outline btn-sm" onclick="window.open('https://waze.com/ul?ll=${h.lat},${h.lng}&navigate=yes','_blank')">🗺️ Waze</button>
-    </div>`;
-  }
-
-  let adminActions = '';
-  if (admin) {
-    adminActions = `<div class="detail-admin">
-      <button class="btn btn-primary btn-sm" onclick="showHospitalModal(${h.id})">✏️ Modifier fiche</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteHospital(${h.id})">🗑️ Supprimer</button>
-      <button class="btn btn-primary btn-sm" onclick="showServiceModal(${h.id})">+ Ajouter service</button>
-    </div>`;
-  }
-
-  // Groupement par site
-  const servicesBySite = h.services.reduce((acc, s) => {
-    const site = s.building || 'Informations générales';
-    if (!acc[site]) acc[site] = [];
-    acc[site].push(s);
-    return acc;
-  }, {});
-
-  let servicesHTML = '';
-  for (const [site, services] of Object.entries(servicesBySite)) {
-    servicesHTML += `
-      <div class="site-group">
-        <div class="section-title">${esc(site)}</div>
-        ${services.map(s => `
-          <div class="service-card">
-            <div class="service-info">
-              <h4>${esc(s.name)} ${s.floor ? `<span class="badge-floor">${esc(s.floor)}</span>` : ''}</h4>
-              ${s.description ? `<p>${esc(s.description)}</p>` : ''}
-              ${s.door_codes ? `<p><strong>Code accès:</strong> ${esc(s.door_codes)}</p>` : ''}
-              ${s.phone ? `<p>📞 ${esc(s.phone)}</p>` : ''}
-            </div>
-            ${admin ? `<div class="service-actions">
-              <button onclick="showServiceModal(${h.id}, ${s.id})">✏️</button>
-              <button onclick="deleteService(${s.id})">🗑️</button>
-            </div>` : ''}
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
-
-  detail.innerHTML = `
-    <div class="detail-header">
-      <h2>${esc(h.name)}</h2>
-      <div class="detail-info">
-        <div class="info-line"><span class="label">Adresse:</span> <span>${esc(h.address)}</span></div>
-        <div class="info-line"><span class="label">Contact:</span> <span>${h.phone || 'Non renseigné'}</span></div>
-      </div>
-      ${gps}
-      ${adminActions}
-    </div>
-    <div class="services-section">
-      ${h.services.length === 0 ? '<div class="empty-state">Aucun service renseigné</div>' : servicesHTML}
-    </div>
-  `;
-
-  loadHospitals();
-}
-
-// ===== QUICK SEARCH =====
-let quickTimer;
-function quickSearch() {
-  clearTimeout(quickTimer);
-  quickTimer = setTimeout(async () => {
-    const q = document.getElementById('quickSearchInput').value.trim();
-    const container = document.getElementById('quickResults');
-    if (!q) { container.innerHTML = ''; return; }
-    const hospitals = await api(`/api/hospitals?search=${encodeURIComponent(q)}`);
-    if (hospitals.length === 0) {
-      container.innerHTML = '<div class="empty-state">Aucun résultat trouvé</div>';
-      return;
-    }
-    container.innerHTML = hospitals.map(h => `
-      <div class="result-card" onclick="selectHospital(${h.id})">
-        <h4>${esc(h.name)}</h4>
-        <p>${esc(h.address)}</p>
-        <span class="result-tag">${h.phone || ''}</span>
-      </div>
-    `).join('');
-  }, 250);
-}
-
-// ===== MODALS =====
+// ===== HOSPITAL MODAL =====
 function showHospitalModal(id) {
-  document.getElementById('hospitalModalTitle').textContent = id ? 'Modifier l\'établissement' : 'Ajouter un établissement';
+  document.getElementById('hospitalModalTitle').textContent = id ? 'Modifier' : 'Ajouter un hôpital';
   document.getElementById('hId').value = id || '';
   if (id) {
     api(`/api/hospitals/${id}`).then(h => {
@@ -295,11 +260,8 @@ async function saveHospital(e) {
     lat: parseFloat(document.getElementById('hLat').value) || 0,
     lng: parseFloat(document.getElementById('hLng').value) || 0,
   };
-  if (id) {
-    await api(`/api/hospitals/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-  } else {
-    await api('/api/hospitals', { method: 'POST', body: JSON.stringify(data) });
-  }
+  if (id) { await api(`/api/hospitals/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+  else { await api('/api/hospitals', { method: 'POST', body: JSON.stringify(data) }); }
   closeModal('hospitalModal');
   selectedId = id ? parseInt(id) : null;
   if (selectedId) selectHospital(selectedId);
@@ -307,15 +269,16 @@ async function saveHospital(e) {
 }
 
 async function deleteHospital(id) {
-  if (!confirm('Supprimer cet établissement et tous ses services ?')) return;
   await api(`/api/hospitals/${id}`, { method: 'DELETE' });
   selectedId = null;
-  document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un établissement</h3><p>Cliquez sur un hôpital dans la liste pour consulter sa fiche technique</p></div>`;
+  document.getElementById('hospitalDetail').innerHTML =
+    `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3></div>`;
   loadHospitals();
 }
 
+// ===== SERVICE MODAL =====
 function showServiceModal(hospitalId, serviceId) {
-  document.getElementById('serviceModalTitle').textContent = serviceId ? 'Modifier le service' : 'Ajouter un service';
+  document.getElementById('serviceModalTitle').textContent = serviceId ? 'Modifier' : 'Ajouter un service';
   document.getElementById('sHospitalId').value = hospitalId;
   document.getElementById('sId').value = serviceId || '';
   if (serviceId) {
@@ -323,13 +286,15 @@ function showServiceModal(hospitalId, serviceId) {
       const s = h.services.find(sv => sv.id === serviceId);
       if (s) {
         document.getElementById('sName').value = s.name;
-        document.getElementById('sFloor').value = s.floor;
-        document.getElementById('sDescription').value = s.description;
-        document.getElementById('sPhone').value = s.phone;
+        document.getElementById('sBuilding').value = s.building || '';
+        document.getElementById('sFloor').value = s.floor || '';
+        document.getElementById('sDoorCodes').value = s.door_codes || '';
+        document.getElementById('sDescription').value = s.description || '';
+        document.getElementById('sPhone').value = s.phone || '';
       }
     });
   } else {
-    ['sName','sFloor','sDescription','sPhone'].forEach(id => document.getElementById(id).value = '');
+    ['sName','sBuilding','sFloor','sDoorCodes','sDescription','sPhone'].forEach(id => document.getElementById(id).value = '');
   }
   document.getElementById('serviceModal').classList.remove('hidden');
 }
@@ -341,17 +306,16 @@ async function saveService(e) {
   const data = {
     hospital_id: parseInt(hospitalId),
     name: document.getElementById('sName').value,
+    building: document.getElementById('sBuilding').value,
     floor: document.getElementById('sFloor').value,
+    door_codes: document.getElementById('sDoorCodes').value,
     description: document.getElementById('sDescription').value,
     phone: document.getElementById('sPhone').value,
   };
-  if (id) {
-    await api(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-  } else {
-    await api('/api/services', { method: 'POST', body: JSON.stringify(data) });
-  }
+  if (id) { await api(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+  else { await api('/api/services', { method: 'POST', body: JSON.stringify(data) }); }
   closeModal('serviceModal');
-  selectHospitals(parseInt(hospitalId));
+  if (selectedId) selectHospital(parseInt(hospitalId));
 }
 
 async function deleteService(id) {
@@ -363,18 +327,13 @@ async function deleteService(id) {
 
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-function esc(str) {
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
+function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
-document.addEventListener('click', (e) => {
+document.addEventListener('click', e => {
   if (e.target.classList.contains('modal')) closeModal(e.target.id);
   if (e.target.classList.contains('login-overlay')) closeLogin();
 });
-
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal:not(.hidden), .login-overlay:not(.hidden)').forEach(el => {
       if (el.classList.contains('modal')) closeModal(el.id);

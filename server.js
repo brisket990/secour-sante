@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const { initialize, get, all, run } = require('./database');
+const { initialize, get, all, run, reseed } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -156,6 +156,13 @@ app.put('/api/messages/:id/read', requireAuth, (req, res) => {
 app.delete('/api/messages/:id', requireAuth, (req, res) => {
   run('DELETE FROM messages WHERE id = ?', [req.params.id]);
   res.json({ success: true });
+});
+
+app.post('/api/reseed', requireAuth, (req, res) => {
+  run('DELETE FROM services', []);
+  run('DELETE FROM hospitals', []);
+  reseed();
+  res.json({ success: true, message: 'Données réinitialisées' });
 });
 
 app.delete('/api/services/:id', requireAuth, (req, res) => {
