@@ -13,13 +13,12 @@ function api(url, opts = {}) {
   });
 }
 
-// ===== SIDEBAR =====
+// ===== SIDEBAR & VIEWS =====
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('open');
 }
 
-// ===== VIEWS =====
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -28,7 +27,6 @@ function showView(name) {
   const idx = ['hospitals','recherche','infos'].indexOf(name);
   if (navItems[idx]) navItems[idx].classList.add('active');
   if (name === 'hospitals') loadHospitals();
-  if (name === 'recherche') document.getElementById('quickSearchInput').focus();
   if (window.innerWidth <= 768) { toggleSidebar(); }
   return false;
 }
@@ -69,7 +67,12 @@ function logout() {
   localStorage.removeItem('token');
   updateAdminUI();
   loadHospitals();
-  document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3><p>Cliquez sur un hôpital dans la liste pour voir ses services</p></div>`;
+  document.getElementById('hospitalDetail').innerHTML = `
+    <div class="empty-detail">
+      <div class="empty-icon">🏥</div>
+      <h3>Sélectionnez un établissement</h3>
+      <p>Cliquez sur un hôpital dans la liste pour consulter sa fiche technique</p>
+    </div>`;
   selectedId = null;
 }
 
@@ -78,7 +81,7 @@ function updateAdminUI() {
   document.getElementById('adminText').textContent = admin ? 'Admin ✓' : 'Admin';
   document.getElementById('adminToggle').classList.toggle('active', admin);
   document.getElementById('adminBadge').classList.toggle('hidden', !admin);
-  document.getElementById('addBtn').style.display = admin ? '' : 'none';
+  document.getElementById('addBtn').style.display = admin ? 'inline-flex' : 'none';
 }
 
 // ===== SEARCH =====
@@ -88,16 +91,15 @@ function searchHospitals() {
   searchTimer = setTimeout(loadHospitals, 250);
 }
 
-// ===== LOAD HOSPITALS =====
 async function loadHospitals() {
   const search = document.getElementById('searchInput').value;
   const q = search ? `?search=${encodeURIComponent(search)}` : '';
   const hospitals = await api(`/api/hospitals${q}`);
   const container = document.getElementById('hospitalList');
   document.getElementById('hospitalCount').textContent = hospitals.length;
-  document.getElementById('subtitleHospitals').textContent = hospitals.length === 0 ? 'Aucun résultat' : `${hospitals.length} hôpital${hospitals.length > 1 ? 's' : ''} trouvé${hospitals.length > 1 ? 's' : ''}`;
+  document.getElementById('subtitleHospitals').textContent = hospitals.length === 0 ? 'Aucun résultat' : `${hospitals.length} établissement${hospitals.length > 1 ? 's' : ''} trouvé${hospitals.length > 1 ? 's' : ''}`;
   if (hospitals.length === 0) {
-    container.innerHTML = '<div class="empty-state">Aucun hôpital trouvé</div>';
+    container.innerHTML = '<div class="empty-state">Aucun établissement trouvé</div>';
     return;
   }
   container.innerHTML = hospitals.map(h => `
@@ -109,7 +111,6 @@ async function loadHospitals() {
   `).join('');
 }
 
-// ===== SELECT HOSPITAL =====
 async function selectHospital(id) {
   selectedId = id;
   showView('hospitals');
@@ -120,7 +121,7 @@ async function selectHospital(id) {
   let gps = '';
   if (h.lat && h.lng) {
     gps = `<div class="detail-gps">
-      <button class="btn btn-success btn-sm" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=driving','_blank')">📍 Naviguer</button>
+      <button class="btn btn-success btn-sm" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=driving','_blank')">📍 Navigation Google Maps</button>
       <button class="btn btn-outline btn-sm" onclick="window.open('https://waze.com/ul?ll=${h.lat},${h.lng}&navigate=yes','_blank')">🗺️ Waze</button>
     </div>`;
   }
@@ -128,9 +129,9 @@ async function selectHospital(id) {
   let adminActions = '';
   if (admin) {
     adminActions = `<div class="detail-admin">
-      <button class="btn btn-primary btn-sm" onclick="showHospitalModal(${h.id})">✏️ Modifier</button>
+      <button class="btn btn-primary btn-sm" onclick="showHospitalModal(${h.id})">✏️ Modifier fiche</button>
       <button class="btn btn-danger btn-sm" onclick="deleteHospital(${h.id})">🗑️ Supprimer</button>
-      <button class="btn btn-primary btn-sm" onclick="showServiceModal(${h.id})">+ Service</button>
+      <button class="btn btn-primary btn-sm" onclick="showServiceModal(${h.id})">+ Ajouter service</button>
     </div>`;
   }
 
@@ -138,19 +139,19 @@ async function selectHospital(id) {
     <div class="detail-header">
       <h2>${esc(h.name)}</h2>
       <div class="detail-info">
-        <div class="info-line">📍 ${esc(h.address)}</div>
-        <div class="info-line">📞 ${h.phone || 'Non renseigné'}</div>
+        <div class="info-line"><span class="label">Adresse:</span> <span>${esc(h.address)}</span></div>
+        <div class="info-line"><span class="label">Contact:</span> <span>${h.phone || 'Non renseigné'}</span></div>
       </div>
       ${gps}
       ${adminActions}
     </div>
     <div class="services-section">
-      <div class="section-title">Services</div>
+      <div class="section-title">Services de Réanimation & Urgences</div>
       ${h.services.length === 0 ? '<div class="empty-state">Aucun service renseigné</div>' :
         h.services.map(s => `
           <div class="service-card">
             <div class="service-info">
-              <h4>${esc(s.name)} ${s.floor ? `<span class="badge-floor">📍 ${esc(s.floor)}</span>` : ''}</h4>
+              <h4>${esc(s.name)} ${s.floor ? `<span class="badge-floor">${esc(s.floor)}</span>` : ''}</h4>
               ${s.description ? `<p>${esc(s.description)}</p>` : ''}
               ${s.phone ? `<p>📞 ${esc(s.phone)}</p>` : ''}
             </div>
@@ -175,7 +176,7 @@ function quickSearch() {
     if (!q) { container.innerHTML = ''; return; }
     const hospitals = await api(`/api/hospitals?search=${encodeURIComponent(q)}`);
     if (hospitals.length === 0) {
-      container.innerHTML = '<div class="empty-state">Aucun résultat</div>';
+      container.innerHTML = '<div class="empty-state">Aucun résultat trouvé</div>';
       return;
     }
     container.innerHTML = hospitals.map(h => `
@@ -188,21 +189,20 @@ function quickSearch() {
   }, 250);
 }
 
-// ===== HOSPITAL MODAL =====
+// ===== MODALS =====
 function showHospitalModal(id) {
-  document.getElementById('hospitalModalTitle').textContent = id ? 'Modifier l\'hôpital' : 'Ajouter un hôpital';
+  document.getElementById('hospitalModalTitle').textContent = id ? 'Modifier l\'établissement' : 'Ajouter un établissement';
   document.getElementById('hId').value = id || '';
   if (id) {
     api(`/api/hospitals/${id}`).then(h => {
       document.getElementById('hName').value = h.name;
       document.getElementById('hAddress').value = h.address;
       document.getElementById('hPhone').value = h.phone;
-      document.getElementById('hPhone2').value = '';
       document.getElementById('hLat').value = h.lat;
       document.getElementById('hLng').value = h.lng;
     });
   } else {
-    ['hName','hAddress','hPhone','hPhone2','hLat','hLng'].forEach(id => document.getElementById(id).value = '');
+    ['hName','hAddress','hPhone','hLat','hLng'].forEach(id => document.getElementById(id).value = '');
   }
   document.getElementById('hospitalModal').classList.remove('hidden');
 }
@@ -229,14 +229,13 @@ async function saveHospital(e) {
 }
 
 async function deleteHospital(id) {
-  if (!confirm('Supprimer cet hôpital et tous ses services ?')) return;
+  if (!confirm('Supprimer cet établissement et tous ses services ?')) return;
   await api(`/api/hospitals/${id}`, { method: 'DELETE' });
   selectedId = null;
-  document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3><p>Cliquez sur un hôpital dans la liste pour voir ses services</p></div>`;
+  document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un établissement</h3><p>Cliquez sur un hôpital dans la liste pour consulter sa fiche technique</p></div>`;
   loadHospitals();
 }
 
-// ===== SERVICE MODAL =====
 function showServiceModal(hospitalId, serviceId) {
   document.getElementById('serviceModalTitle').textContent = serviceId ? 'Modifier le service' : 'Ajouter un service';
   document.getElementById('sHospitalId').value = hospitalId;
@@ -274,7 +273,7 @@ async function saveService(e) {
     await api('/api/services', { method: 'POST', body: JSON.stringify(data) });
   }
   closeModal('serviceModal');
-  selectHospital(parseInt(hospitalId));
+  selectHospitals(parseInt(hospitalId));
 }
 
 async function deleteService(id) {
@@ -284,7 +283,6 @@ async function deleteService(id) {
   if (hId) selectHospital(hId);
 }
 
-// ===== UTILS =====
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
 function esc(str) {
@@ -293,13 +291,11 @@ function esc(str) {
   return d.innerHTML;
 }
 
-// ===== CLOSE OVERLAYS =====
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('modal')) closeModal(e.target.id);
   if (e.target.classList.contains('login-overlay')) closeLogin();
 });
 
-// ===== KEYBOARD =====
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal:not(.hidden), .login-overlay:not(.hidden)').forEach(el => {
@@ -309,6 +305,5 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ===== INIT =====
 updateAdminUI();
 loadHospitals();
