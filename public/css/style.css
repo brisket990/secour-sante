@@ -1,0 +1,169 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f0f4f8;
+  color: #1a202c;
+  min-height: 100vh;
+}
+
+header {
+  background: linear-gradient(135deg, #1a365d, #2b6cb0);
+  color: white;
+  padding: 1.5rem 2rem;
+  text-align: center;
+}
+header h1 { font-size: 1.8rem; }
+.subtitle { opacity: 0.85; margin-top: 0.3rem; font-size: 0.95rem; }
+
+.toolbar {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  align-items: center;
+}
+.toolbar input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.toolbar input:focus { border-color: #2b6cb0; }
+
+.btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: #2b6cb0; color: white; }
+.btn-secondary { background: #718096; color: white; }
+.btn-danger { background: #e53e3e; color: white; }
+.btn-success { background: #38a169; color: white; }
+.btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
+
+main { display: flex; padding: 1.5rem 2rem; gap: 2rem; }
+.hospital-list { flex: 1; }
+.hospital-detail { flex: 1.5; }
+
+.hospital-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 0.8rem;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: transform 0.15s, box-shadow 0.15s;
+  border-left: 4px solid #2b6cb0;
+}
+.hospital-card:hover { transform: translateX(3px); box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
+.hospital-card h3 { font-size: 1rem; margin-bottom: 0.25rem; }
+.hospital-card p { font-size: 0.85rem; color: #4a5568; }
+
+.detail-header {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+}
+.detail-header h2 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+.detail-header p { font-size: 0.9rem; color: #4a5568; margin-bottom: 0.3rem; }
+.detail-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+
+.service-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 0.7rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-left: 4px solid #38a169;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.service-info h4 { font-size: 1rem; margin-bottom: 0.25rem; }
+.service-info p { font-size: 0.85rem; color: #4a5568; }
+.service-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+.service-actions button { background: none; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.3rem 0.6rem; cursor: pointer; font-size: 0.8rem; transition: background 0.15s; }
+.service-actions button:hover { background: #edf2f7; }
+
+.badge {
+  display: inline-block;
+  background: #ebf8ff;
+  color: #2b6cb0;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  margin-top: 0.3rem;
+}
+
+.hidden { display: none !important; }
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal.hidden { display: none; }
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+.modal-content h2 { margin-bottom: 1rem; }
+.modal-content label { display: block; font-size: 0.85rem; font-weight: 600; margin-top: 0.8rem; margin-bottom: 0.25rem; color: #2d3748; }
+.modal-content input, .modal-content textarea {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  outline: none;
+}
+.modal-content input:focus, .modal-content textarea:focus { border-color: #2b6cb0; }
+.modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.2rem; }
+.close {
+  position: absolute;
+  right: 1.2rem;
+  top: 1rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #a0aec0;
+  line-height: 1;
+}
+.close:hover { color: #4a5568; }
+
+.empty-state {
+  text-align: center;
+  color: #a0aec0;
+  padding: 3rem 1rem;
+}
+.empty-state p { font-size: 1.1rem; }
+
+@media (max-width: 768px) {
+  main { flex-direction: column; padding: 1rem; }
+  .toolbar { flex-direction: column; padding: 1rem; }
+  .toolbar input { width: 100%; }
+}

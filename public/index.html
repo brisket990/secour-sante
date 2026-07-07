@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecourSanté - Annuaire Hospitalier</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>🚑 SecourSanté</h1>
+    <p class="subtitle">Annuaire des services hospitaliers pour ambulances de réanimation</p>
+  </header>
+
+  <div class="toolbar">
+    <input type="text" id="searchInput" placeholder="Rechercher un hôpital, un service..." oninput="searchHospitals()">
+    <button class="btn btn-primary" onclick="showHospitalModal()">+ Ajouter un hôpital</button>
+  </div>
+
+  <main>
+    <div id="hospitalList" class="hospital-list"></div>
+    <div id="hospitalDetail" class="hospital-detail hidden"></div>
+  </main>
+
+  <!-- Modal Hôpital -->
+  <div id="hospitalModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('hospitalModal')">&times;</span>
+      <h2 id="hospitalModalTitle">Ajouter un hôpital</h2>
+      <form id="hospitalForm" onsubmit="saveHospital(event)">
+        <input type="hidden" id="hId">
+        <label>Nom de l'hôpital *</label>
+        <input type="text" id="hName" required>
+
+        <label>Adresse *</label>
+        <input type="text" id="hAddress" required>
+
+        <label>Téléphone</label>
+        <input type="text" id="hPhone">
+
+        <label>Latitude</label>
+        <input type="number" step="any" id="hLat">
+
+        <label>Longitude</label>
+        <input type="number" step="any" id="hLng">
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('hospitalModal')">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Service -->
+  <div id="serviceModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('serviceModal')">&times;</span>
+      <h2 id="serviceModalTitle">Ajouter un service</h2>
+      <form id="serviceForm" onsubmit="saveService(event)">
+        <input type="hidden" id="sId">
+        <input type="hidden" id="sHospitalId">
+        <label>Nom du service *</label>
+        <input type="text" id="sName" required>
+
+        <label>Étage / Localisation</label>
+        <input type="text" id="sFloor" placeholder="ex: 3e étage, Pavillon A">
+
+        <label>Description</label>
+        <textarea id="sDescription" rows="2"></textarea>
+
+        <label>Téléphone direct</label>
+        <input type="text" id="sPhone">
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('serviceModal')">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
