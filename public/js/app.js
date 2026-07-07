@@ -98,8 +98,8 @@ async function doLogin() {
     const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password: document.getElementById('loginPassword').value }) });
     authToken = res.token;
     localStorage.setItem('token', res.token);
-    isAdminUser = true;
-    userInfo = null;
+    isAdminUser = res.role === 'admin';
+    userInfo = res.user || null;
     closeLogin();
     hideAuth();
     updateAdminUI();
@@ -154,7 +154,7 @@ async function doLoginUser(e) {
     const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ email, password }) });
     authToken = res.token;
     localStorage.setItem('token', res.token);
-    isAdminUser = false;
+    isAdminUser = res.role === 'admin';
     userInfo = res.user;
     hideAuth();
     updateAdminUI();
@@ -172,8 +172,8 @@ async function doLoginAdmin(e) {
     const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password }) });
     authToken = res.token;
     localStorage.setItem('token', res.token);
-    isAdminUser = true;
-    userInfo = null;
+    isAdminUser = res.role === 'admin';
+    userInfo = res.user || null;
     hideAuth();
     updateAdminUI();
     loadHospitals();
