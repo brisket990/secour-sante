@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+android
+data
+*.db
+start.bat
+capacitor.config.json
+DEPLOY-COOLIFY.md
+Dockerfile
+.dockerignore

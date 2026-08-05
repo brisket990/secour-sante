@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RéaDirect</string>
+    <string name="title_activity_main">RéaDirect</string>
+    <string name="package_name">com.secoursante.app</string>
+    <string name="custom_url_scheme">com.secoursante.app</string>
+</resources>

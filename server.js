@@ -134,6 +134,11 @@ app.post('/api/logout', (req, res) => {
   res.json({ success: true });
 });
 
+// Sonde Coolify/Docker — doit rester avant le requireAnyAuth global ci-dessous
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', db: process.env.TURSO_DATABASE_URL ? 'turso' : 'local' });
+});
+
 // Protect all /api/ routes below (user must be logged in)
 app.use('/api', requireAnyAuth);
 

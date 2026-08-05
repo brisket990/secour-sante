@@ -196,7 +196,13 @@ async function initialize(forceLocal) {
       await _seedTurso();
     } catch (e) {
       console.error('[DB] Erreur Turso:', e.message);
-      console.log('[DB] Fallback local');
+      // En conteneur le disque est ephemere : basculer en SQLite local servirait
+      // une base vide et perdrait toute ecriture au redeploiement. On echoue vite
+      // sauf demande explicite.
+      if (process.env.DB_ALLOW_LOCAL_FALLBACK !== 'true') {
+        throw new Error(`Connexion Turso impossible (${e.message}). Verifiez TURSO_DATABASE_URL et TURSO_AUTH_TOKEN, ou definissez DB_ALLOW_LOCAL_FALLBACK=true pour accepter une base locale.`);
+      }
+      console.log('[DB] Fallback local (DB_ALLOW_LOCAL_FALLBACK=true)');
       return initialize(true);
     }
   } else {
