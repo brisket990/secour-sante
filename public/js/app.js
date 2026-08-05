@@ -381,18 +381,25 @@ async function sendContact(e) {
   if (document.getElementById('contactPhone').value) msg += `Tél: ${document.getElementById('contactPhone').value}\n`;
   msg += `\nMessage:\n${document.getElementById('contactMessage').value}`;
 
-  await api('/api/contact', {
-    method: 'POST',
-    body: JSON.stringify({
-      name: document.getElementById('contactName').value,
-      email: document.getElementById('contactEmail').value,
-      subject: typeLabels[type] || 'Contact',
-      message: msg,
-    })
-  });
-  document.getElementById('contactForm').reset();
-  document.getElementById('contactForm').style.display = 'none';
-  document.getElementById('contactSuccess').classList.remove('hidden');
+  const btn = e.target.querySelector('button[type=submit]');
+  if (btn) btn.disabled = true;
+  try {
+    await api('/api/contact', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: document.getElementById('contactName').value,
+        email: document.getElementById('contactEmail').value,
+        subject: typeLabels[type] || 'Contact',
+        message: msg,
+      })
+    });
+    document.getElementById('contactForm').reset();
+    document.getElementById('contactForm').style.display = 'none';
+    document.getElementById('contactSuccess').classList.remove('hidden');
+  } catch (err) {
+    alert('Erreur lors de l\'envoi : ' + err.message);
+    if (btn) btn.disabled = false;
+  }
 }
 
 // ===== INBOX =====

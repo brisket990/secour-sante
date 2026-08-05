@@ -22,7 +22,7 @@ Il utilise maintenant un `Dockerfile` explicite, compatible Coolify.
 | `JWT_SECRET` | oui | Secret de signature des tokens. Sans lui, une valeur publique du dépôt est utilisée |
 | `PORT` | non | `3000` par défaut, Coolify le fournit généralement |
 | `DB_ALLOW_LOCAL_FALLBACK` | non | Voir « Base de données » ci-dessous. Laisser vide en production |
-| `SMTP_USER`, `MAIL_TO` | non | **Sans effet aujourd'hui**, voir « Limitation connue » |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_TO` | non | Notification e-mail des messages de contact. Voir « E-mail » |
 
 ⚠️ Changer `JWT_SECRET` déconnecte tous les utilisateurs (les tokens existants
 deviennent invalides). C'est normal, ils se reconnectent.
@@ -76,11 +76,17 @@ npx cap sync android
 Le certificat doit être valide : avec `cleartext: false`, l'app Android refuse le
 HTTP simple et un certificat auto-signé.
 
-## Limitation connue
+## E-mail (optionnel)
 
-`POST /api/contact` renvoie une **erreur 500** (`transporter is not defined`) :
-`server.js` utilise un transporteur nodemailer qui n'a jamais été créé. Le message
-est bien enregistré en base et visible dans « Messages reçus » côté admin, mais
-l'utilisateur ne voit ni confirmation ni erreur — le formulaire échoue en silence.
-Définir `SMTP_USER` / `MAIL_TO` ne corrige rien tant que le transporteur n'est pas
-instancié. Ce bug est antérieur à la migration Coolify.
+Le formulaire de contact enregistre toujours le message en base (visible dans
+« Messages reçus » côté admin). En plus, si les variables SMTP sont définies, une
+notification e-mail est envoyée à `MAIL_TO` :
+
+- `SMTP_HOST` — serveur SMTP (ex. `smtp.gmail.com`)
+- `SMTP_PORT` — `587` par défaut
+- `SMTP_SECURE` — `true` pour le port 465, sinon laisser vide
+- `SMTP_USER`, `SMTP_PASS` — identifiants du compte d'envoi
+- `MAIL_TO` — destinataire des notifications (par défaut `SMTP_USER`)
+
+Sans ces variables, l'envoi est simplement désactivé — le formulaire fonctionne
+normalement et renvoie une confirmation.

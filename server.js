@@ -13,6 +13,19 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const JWT_SECRET = process.env.JWT_SECRET || 'readirect-secret-change-in-prod';
 
+// Envoi d'e-mail optionnel : actif seulement si SMTP_HOST/USER/PASS sont definis.
+// Sans configuration, transporter reste null et /api/contact enregistre le
+// message sans tenter d'envoi (au lieu de planter avec "transporter is not defined").
+const MAIL_TO = process.env.MAIL_TO || process.env.SMTP_USER || '';
+const transporter = (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    })
+  : null;
+
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 }
@@ -57,6 +70,9 @@ app.post('/api/login', async (req, res) => {
     const token = signToken({ role: 'admin' });
     return res.json({ token, role: 'admin' });
   }
+  // Sans email c'est une tentative admin au mauvais mot de passe : ne pas
+  // interroger la base avec un email undefined (rejete par Turso).
+  if (!req.body.email) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
   const user = await get('SELECT * FROM users WHERE email = ?', [req.body.email]);
   if (!user) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
   if (user.status !== 'approved') return res.status(403).json({ error: 'Compte en attente de validation' });
