@@ -1,5 +1,6 @@
 // Desiderata de planning : chaque agent coche les jours OFF qu'il souhaite
-// (jour, nuit ou les deux) pour les mois ouverts. L'admin règle les limites,
+// (jour, nuit ou les deux) pour les mois ouverts, et peut signaler ses vacances
+// déjà posées (simple information, hors limites de OFF). L'admin règle les limites,
 // la personne qui fait le planning consulte et exporte le mois en Excel ou PDF.
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
@@ -8,7 +9,12 @@ const TYPES = {
   jour: { label: 'Jour', code: 'J', fill: 'FFF4D6' },
   nuit: { label: 'Nuit', code: 'N', fill: 'DCE6FA' },
   both: { label: 'Jour et nuit', code: 'JN', fill: 'F2DCE6' },
+  // Information seulement : les congés se demandent sur Gestime, pas ici.
+  // Ne compte ni dans le maximum par mois ni dans le maximum à la suite.
+  vacances: { label: 'Vacances', code: 'V', fill: 'D9F2E3', info: true },
 };
+const VACANCES_NOTE = 'Vacances = information seulement, posées sur Gestime';
+const isOff = t => !!TYPES[t] && !TYPES[t].info;
 const MENUS = ['hospitals', 'recherche', 'checklist', 'grandegarde', 'desiderata', 'contact'];
 // Par défaut : saisie possible du mois +2 jusqu'à deux ans après le mois en cours
 const DEFAULT_SETTINGS = { open_from: 2, open_to: 24, max_per_month: 6, max_consecutive: 3, types: ['jour', 'nuit', 'both'] };
@@ -58,7 +64,7 @@ function validateSettings(input) {
     open_to: int(input.open_to),
     max_per_month: int(input.max_per_month),
     max_consecutive: int(input.max_consecutive),
-    types: Array.isArray(input.types) ? input.types.filter(t => TYPES[t]) : [],
+    types: Array.isArray(input.types) ? input.types.filter(isOff) : [],
   };
   if (!(s.open_from >= 0 && s.open_from <= 24)) return { error: 'Premier mois ouvert : entre 0 et 24 mois à l\'avance' };
   if (!(s.open_to >= s.open_from && s.open_to <= 24)) return { error: 'Dernier mois ouvert : après le premier et au plus 24 mois à l\'avance' };
@@ -68,8 +74,10 @@ function validateSettings(input) {
   return { settings: s };
 }
 
-// Ce que l'ajout de `day` donnerait avec les jours déjà posés (`days` : jour -> type)
-function checkRules(s, days, day) {
+// Ce que l'ajout de `day` donnerait avec les jours déjà posés (`all` : jour -> type).
+// Les vacances (information) ne comptent pas.
+function checkRules(s, all, day) {
+  const days = Object.fromEntries(Object.entries(all).filter(([, t]) => isOff(t)));
   const month = day.slice(0, 7);
   const inMonth = Object.keys(days).filter(d => d.startsWith(month) && d !== day).length + 1;
   if (inMonth > s.max_per_month) return `Pas plus de ${s.max_per_month} jours OFF dans le mois.`;
@@ -111,16 +119,19 @@ async function buildXlsx(ym, { users, entries }) {
 
   const weekend = d => [0, 6].includes(weekday(ym, d));
   const totals = Array(n + 1).fill(0);
+  const onLeave = Array(n + 1).fill(0);
   users.forEach((u, i) => {
     const days = byUser[u.id] || {};
     const row = ws.getRow(4 + i);
-    const count = Object.keys(days).length;
+    const count = Object.values(days).filter(isOff).length;
     row.values = [`${u.nom} ${u.prenom}`, u.aph || '', ...Array.from({ length: n }, (_, k) => (days[k + 1] ? TYPES[days[k + 1]].code : '')), count || ''];
     for (let d = 1; d <= n; d++) {
       const cell = row.getCell(d + 2);
       cell.alignment = { horizontal: 'center' };
       const t = days[d];
-      if (t) { totals[d]++; cell.font = { bold: true }; }
+      if (t) cell.font = { bold: true };
+      if (isOff(t)) totals[d]++;
+      if (t === 'vacances') onLeave[d]++;
       const fill = t ? TYPES[t].fill : weekend(d) ? 'EEF1F5' : null;
       if (fill) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + fill } };
     }
@@ -130,14 +141,19 @@ async function buildXlsx(ym, { users, entries }) {
   totalRow.values = ['Agents en OFF', '', ...totals.slice(1).map(v => v || '')];
   totalRow.font = { bold: true };
   for (let d = 1; d <= n; d++) totalRow.getCell(d + 2).alignment = { horizontal: 'center' };
+  const leaveRow = ws.getRow(5 + users.length);
+  leaveRow.values = ['Agents en vacances', '', ...onLeave.slice(1).map(v => v || '')];
+  leaveRow.font = { bold: true };
+  for (let d = 1; d <= n; d++) leaveRow.getCell(d + 2).alignment = { horizontal: 'center' };
 
   const thin = { style: 'thin', color: { argb: 'FFC9D1DC' } };
-  for (let r = 3; r <= 4 + users.length; r++) {
+  for (let r = 3; r <= 5 + users.length; r++) {
     for (let c = 1; c <= n + 3; c++) ws.getRow(r).getCell(c).border = { top: thin, left: thin, bottom: thin, right: thin };
   }
-  const legend = ws.getRow(6 + users.length);
+  const legend = ws.getRow(7 + users.length);
   legend.values = ['Légende', Object.values(TYPES).map(t => `${t.code} = ${t.label}`).join('    ')];
   legend.getCell(1).font = { bold: true };
+  ws.getRow(8 + users.length).values = ['', VACANCES_NOTE + '. Le total ne compte que les jours OFF.'];
   return wb.xlsx.writeBuffer();
 }
 
@@ -190,26 +206,34 @@ function buildPdf(ym, { users, entries }) {
 
     drawHeader();
     const totals = Array(n + 1).fill(0);
+    const onLeave = Array(n + 1).fill(0);
     for (const u of users) {
       ensureRoom();
       const days = byUser[u.id] || {};
       cell(left, y, nameW, rowH, `${u.nom} ${u.prenom}${u.aph ? ` (${u.aph})` : ''}`, { align: 'left' });
       for (let d = 1; d <= n; d++) {
         const t = days[d];
-        if (t) totals[d]++;
+        if (isOff(t)) totals[d]++;
+        if (t === 'vacances') onLeave[d]++;
         cell(left + nameW + (d - 1) * dayW, y, dayW, rowH, t ? TYPES[t].code : '', { bold: true, fill: t ? '#' + TYPES[t].fill : weekend(d) ? '#f3f5f8' : null });
       }
-      cell(left + nameW + n * dayW, y, totalW, rowH, Object.keys(days).length || '', { bold: true });
+      cell(left + nameW + n * dayW, y, totalW, rowH, Object.values(days).filter(isOff).length || '', { bold: true });
       y += rowH;
     }
     ensureRoom();
     cell(left, y, nameW, rowH, 'Agents en OFF', { bold: true, align: 'left', fill: '#eef1f5' });
     for (let d = 1; d <= n; d++) cell(left + nameW + (d - 1) * dayW, y, dayW, rowH, totals[d] || '', { bold: true, fill: '#eef1f5' });
     cell(left + nameW + n * dayW, y, totalW, rowH, '', { fill: '#eef1f5' });
+    y += rowH;
+    ensureRoom();
+    cell(left, y, nameW, rowH, 'Agents en vacances', { bold: true, align: 'left', fill: '#eef1f5' });
+    for (let d = 1; d <= n; d++) cell(left + nameW + (d - 1) * dayW, y, dayW, rowH, onLeave[d] || '', { bold: true, fill: '#eef1f5' });
+    cell(left + nameW + n * dayW, y, totalW, rowH, '', { fill: '#eef1f5' });
     y += rowH + 12;
 
     doc.font('Helvetica').fontSize(8).fillColor('#556377')
-      .text(Object.values(TYPES).map(t => `${t.code} = ${t.label}`).join('     '), left, y);
+      .text(Object.values(TYPES).map(t => `${t.code} = ${t.label}`).join('     '), left, y)
+      .text(`${VACANCES_NOTE}. Le total ne compte que les jours OFF.`, left, y + 12);
     doc.end();
   });
 }
@@ -283,6 +307,31 @@ function registerPlanningRoutes(app, { get, all, run, requireAuth, signToken, ve
     res.json({ settings, types: TYPES, months, days: Object.fromEntries(rows.map(r => [r.day, r.type])) });
   });
 
+  // Période de vacances (information) : du jour `from` au jour `to` inclus.
+  // type 'vacances' : marque chaque jour (remplace un OFF éventuel) ; type null :
+  // retire les jours de vacances de la période, sans toucher aux OFF.
+  // Déclarée avant /me/:day, qui sinon capterait « period ».
+  app.put('/api/planning/me/period', async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(404).json({ error: 'Aucun profil pour ce compte' });
+    if (hiddenMenus(user).includes('desiderata')) return res.status(403).json({ error: 'Desiderata non disponibles pour ce compte' });
+    const { from, to } = req.body || {};
+    const type = req.body?.type || null;
+    const valid = d => DAY_RE.test(String(d)) && Number(d.slice(8)) <= daysInMonth(d.slice(0, 7));
+    if (!valid(from) || !valid(to) || to < from) return res.status(400).json({ error: 'Dates de début et de fin invalides' });
+    if (type && type !== 'vacances') return res.status(400).json({ error: 'Seules les vacances se saisissent par période' });
+    const days = [];
+    for (let d = from; d <= to; d = shiftDay(d, 1)) days.push(d);
+    if (days.length > 62) return res.status(400).json({ error: 'Période trop longue (62 jours au maximum)' });
+    const months = openMonths(await getSettings());
+    if (days.some(d => !months.includes(d.slice(0, 7)))) return res.status(400).json({ error: 'La période sort des mois ouverts à la saisie' });
+    for (const d of days) {
+      if (type) await run('INSERT INTO desiderata (user_id, day, type) VALUES (?, ?, ?) ON CONFLICT(user_id, day) DO UPDATE SET type = excluded.type', [user.id, d, type]);
+      else await run("DELETE FROM desiderata WHERE user_id = ? AND day = ? AND type = 'vacances'", [user.id, d]);
+    }
+    res.json({ success: true, days, type });
+  });
+
   app.put('/api/planning/me/:day', async (req, res) => {
     const user = await currentUser(req);
     if (!user) return res.status(404).json({ error: 'Aucun profil pour ce compte' });
@@ -297,10 +346,12 @@ function registerPlanningRoutes(app, { get, all, run, requireAuth, signToken, ve
       await run('DELETE FROM desiderata WHERE user_id = ? AND day = ?', [user.id, day]);
       return res.json({ success: true, day, type: null });
     }
-    if (!settings.types.includes(type)) return res.status(400).json({ error: 'Type de jour OFF non autorisé' });
-    const rows = await all('SELECT day, type FROM desiderata WHERE user_id = ? AND day >= ? AND day <= ?', [user.id, shiftDay(day, -40), shiftDay(day, 40)]);
-    const error = checkRules(settings, Object.fromEntries(rows.map(r => [r.day, r.type])), day);
-    if (error) return res.status(400).json({ error });
+    if (type !== 'vacances') {
+      if (!settings.types.includes(type)) return res.status(400).json({ error: 'Type de jour OFF non autorisé' });
+      const rows = await all('SELECT day, type FROM desiderata WHERE user_id = ? AND day >= ? AND day <= ?', [user.id, shiftDay(day, -40), shiftDay(day, 40)]);
+      const error = checkRules(settings, Object.fromEntries(rows.map(r => [r.day, r.type])), day);
+      if (error) return res.status(400).json({ error });
+    }
     await run('INSERT INTO desiderata (user_id, day, type) VALUES (?, ?, ?) ON CONFLICT(user_id, day) DO UPDATE SET type = excluded.type', [user.id, day, type]);
     res.json({ success: true, day, type });
   });

@@ -550,10 +550,34 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
 /* Navigation des mois (desiderata) */
 .de-nav { justify-content: space-between; }
 .de-month-select {
-  flex: 1; min-height: 44px; padding: 8px 12px; text-align: center; text-align-last: center;
+  flex: 1; min-width: 0; min-height: 44px; padding: 8px 12px; text-align: center; text-align-last: center; text-overflow: ellipsis;
   font: inherit; font-weight: 600; font-size: 1rem; color: var(--text);
   background: var(--card); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
 }
 .icon-btn:disabled { opacity: 0.35; cursor: default; }
 .icon-btn { flex-shrink: 0; }
 .de-nav .icon-btn { width: 44px; height: 44px; }
+
+/* Vacances (information, posées sur Gestime) */
+.off-vacances { --off-bg: #d9f2e3; --off-fg: #13633d; }
+body.dark .off-vacances { --off-bg: #12352a; --off-fg: #6fd6a0; }
+.vac-card { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px; border-radius: var(--radius); background: var(--card); border: 1px solid var(--border); }
+.vac-head { display: flex; gap: 12px; align-items: flex-start; }
+.vac-head > i { font-size: 1.5rem; color: var(--off-fg, #13633d); flex-shrink: 0; margin-top: 2px; }
+.vac-card { --off-fg: #13633d; }
+body.dark .vac-card { --off-fg: #6fd6a0; }
+.vac-head h3 { font-size: 1rem; }
+.vac-head p { font-size: 0.88rem; color: var(--text-muted); margin-top: 2px; }
+.vac-head strong, .vac-notice strong { color: var(--text); }
+.vac-card .btn { align-self: flex-start; }
+.vac-notice {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 10px 12px; margin-bottom: 14px; border-radius: var(--radius-sm);
+  background: var(--amber-soft); color: var(--text); font-size: 0.88rem;
+}
+.vac-notice i { color: var(--amber); font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.vac-notice.small { margin: 0; font-size: 0.8rem; padding: 8px 10px; }
+.sheet-sep { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); padding: 8px 2px 0; border-top: 1px solid var(--border); margin-top: 4px; }
+.sheet-option.vac i:first-child { color: #13633d; }
+body.dark .sheet-option.vac i:first-child { color: #6fd6a0; }
+.pl-note { font-size: 0.8rem; color: var(--text-muted); padding: 10px 14px; border-top: 1px solid var(--border); }

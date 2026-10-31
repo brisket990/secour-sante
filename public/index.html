@@ -299,6 +299,16 @@
             <div class="de-grid" id="deGrid"></div>
             <div class="de-legend" id="deLegend"></div>
           </div>
+          <section class="vac-card">
+            <div class="vac-head">
+              <i class="ph ph-airplane-tilt"></i>
+              <div>
+                <h3>Vacances déjà posées</h3>
+                <p>Information seulement, pour la personne qui fait le planning. <strong>Les demandes de vacances se font sur Gestime, pas ici.</strong> Les jours de vacances ne comptent pas dans vos jours OFF.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="openVacationModal()"><i class="ph ph-plus"></i> Signaler mes vacances</button>
+          </section>
           <div class="empty-state hidden" id="deEmpty"></div>
         </div>
       </div>
@@ -405,6 +415,28 @@
       </div>
       <div class="sheet-options" id="daySheetOptions"></div>
       <p class="auth-error hidden" id="daySheetError"></p>
+    </div>
+  </div>
+
+  <!-- Période de vacances (information) -->
+  <div id="vacationModal" class="modal sheet hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2>Signaler mes vacances</h2>
+        <button class="modal-close" type="button" onclick="closeModal('vacationModal')" aria-label="Fermer"><i class="ph ph-x"></i></button>
+      </div>
+      <p class="vac-notice"><i class="ph ph-info"></i><span>Information seulement. Ceci ne pose pas de congés : <strong>la demande se fait sur Gestime</strong>. Indiquez ici des vacances déjà posées pour que le planning en tienne compte.</span></p>
+      <form onsubmit="saveVacation(event)">
+        <div class="form-row">
+          <div class="form-group"><label for="vacFrom">Du</label><input type="date" id="vacFrom" required></div>
+          <div class="form-group"><label for="vacTo">Au (inclus)</label><input type="date" id="vacTo" required></div>
+        </div>
+        <p class="auth-error hidden" id="vacError"></p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('vacationModal')">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
     </div>
   </div>
 
