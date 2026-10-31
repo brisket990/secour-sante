@@ -6,7 +6,13 @@
   <meta name="theme-color" content="#0f2a5c">
   <title>SMUR Beaujon</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <!-- Installation sur l'écran d'accueil (iPhone : Safari > Partager > Sur l'écran d'accueil) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="SMUR Beaujon">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -395,6 +401,25 @@
             <li><i class="ph ph-envelope-simple"></i> Corrections proposées par les équipes</li>
           </ul>
         </div>
+
+        <!-- Installer l'application (masqué dans l'appli Android, déjà installée) -->
+        <section class="surface narrow install" id="installSection">
+          <h3><i class="ph ph-device-mobile"></i> Installer l'application</h3>
+          <div class="install-os" id="installIphone">
+            <h4><i class="ph ph-apple-logo"></i> iPhone</h4>
+            <ol class="install-steps">
+              <li>Ouvrez ce site dans <strong>Safari</strong>.</li>
+              <li>Touchez <strong>Partager</strong> <i class="ph ph-export" aria-label="icône Partager"></i> en bas de l'écran.</li>
+              <li>Choisissez <strong>Sur l'écran d'accueil</strong> <i class="ph ph-plus-square" aria-hidden="true"></i>, puis <strong>Ajouter</strong>.</li>
+            </ol>
+            <p class="install-note">L'icône SMUR Beaujon apparaît sur l'écran d'accueil et s'ouvre en plein écran. Les mises à jour sont automatiques.</p>
+          </div>
+          <div class="install-os" id="installAndroid">
+            <h4><i class="ph ph-android-logo"></i> Android</h4>
+            <p>Téléchargez la dernière version de l'application, puis ouvrez le fichier pour l'installer.</p>
+            <a class="btn btn-secondary" href="https://github.com/brisket990/secour-sante/releases/latest" onclick="openExternal(this.href);return false"><i class="ph ph-download-simple"></i> Télécharger pour Android</a>
+          </div>
+        </section>
       </div>
     </main>
   </div>

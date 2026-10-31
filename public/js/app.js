@@ -549,6 +549,18 @@ function showHospitalModal(id) {
   document.getElementById('hospitalModal').classList.remove('hidden');
 }
 
+// ===== INSTALLER L'APPLICATION (À propos) =====
+// Dans l'appli Android, la section n'a pas lieu d'être ; ailleurs, on met en
+// premier les consignes du téléphone utilisé.
+(function setupInstallSection() {
+  const section = document.getElementById('installSection');
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (isNativeApp() || standalone) { section.classList.add('hidden'); return; }
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios) document.getElementById('installIphone').classList.add('first');
+  else if (/Android/.test(navigator.userAgent)) document.getElementById('installAndroid').classList.add('first');
+})();
+
 // ===== CARTE ET RECHERCHE DE LIEU (fiche hôpital) =====
 // Leaflet + fonds OpenStreetMap, chargés seulement à l'ouverture de la fiche.
 const SMUR_BEAUJON = [48.9082, 2.3104];
