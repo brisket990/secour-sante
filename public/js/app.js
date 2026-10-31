@@ -87,36 +87,6 @@ function updateDarkUI() {
 }
 updateDarkUI();
 
-// ===== ADMIN =====
-function toggleAdmin() {
-  if (isAdmin()) {
-    if (confirm('Se déconnecter ?')) logout();
-  } else {
-    document.getElementById('loginOverlay').classList.remove('hidden');
-    document.getElementById('loginPassword').value = '';
-    document.getElementById('loginError').classList.add('hidden');
-    setTimeout(() => document.getElementById('loginPassword').focus(), 100);
-  }
-}
-function closeLogin() { document.getElementById('loginOverlay').classList.add('hidden'); }
-
-async function doLogin() {
-  try {
-    const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password: document.getElementById('loginPassword').value }) });
-    authToken = res.token;
-    localStorage.setItem('token', res.token);
-    isAdminUser = res.role === 'admin';
-    userInfo = res.user || null;
-    closeLogin();
-    hideAuth();
-    updateAdminUI();
-    loadHospitals();
-    if (selectedId) selectHospital(selectedId);
-  } catch {
-    document.getElementById('loginError').classList.remove('hidden');
-  }
-}
-
 function logout() {
   if (authToken) api('/api/logout', { method: 'POST' }).catch(() => {});
   authToken = null;
@@ -148,8 +118,6 @@ function showAuthTab(tab) {
   } else if (tab === 'register') {
     document.getElementById('tabRegister').classList.add('active');
     document.getElementById('registerForm').classList.remove('hidden');
-  } else if (tab === 'adminLogin') {
-    document.getElementById('adminLoginForm').classList.remove('hidden');
   }
 }
 
@@ -169,24 +137,6 @@ async function doLoginUser(e) {
   } catch (err) {
     document.getElementById('loginError').textContent = err.message;
     document.getElementById('loginError').classList.remove('hidden');
-  }
-}
-
-async function doLoginAdmin(e) {
-  e.preventDefault();
-  const password = document.getElementById('adminPassword').value;
-  try {
-    const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ password }) });
-    authToken = res.token;
-    localStorage.setItem('token', res.token);
-    isAdminUser = res.role === 'admin';
-    userInfo = res.user || null;
-    hideAuth();
-    updateAdminUI();
-    loadHospitals();
-  } catch (err) {
-    document.getElementById('adminLoginError').textContent = err.message;
-    document.getElementById('adminLoginError').classList.remove('hidden');
   }
 }
 
@@ -215,18 +165,15 @@ async function doRegister(e) {
 function updateAdminUI() {
   const admin = isAdmin();
   const loggedIn = !!authToken;
-  document.getElementById('adminText').textContent = admin ? 'Se déconnecter (admin)' : 'Admin';
-  document.getElementById('adminToggle').classList.toggle('active', admin);
-  document.getElementById('adminToggle').classList.toggle('hidden', !admin && loggedIn);
   document.getElementById('adminBadge').classList.toggle('hidden', !admin);
   document.getElementById('addBtn').style.display = admin ? '' : 'none';
   document.getElementById('addProtocolBtn').style.display = admin ? '' : 'none';
   document.getElementById('navAdminGroup').classList.toggle('hidden', !admin);
   if (admin) { loadInboxCount(); loadCandidaturesCount(); }
-  document.getElementById('navProfile').classList.toggle('hidden', admin || !userInfo);
+  document.getElementById('navProfile').classList.toggle('hidden', !userInfo);
 
-  // Bouton de déconnexion avec le nom de l'utilisateur
-  const showUser = authToken && !admin && userInfo;
+  // Bouton de déconnexion avec le nom de l'utilisateur (admins compris)
+  const showUser = loggedIn && userInfo;
   document.getElementById('userInfo').classList.toggle('hidden', !showUser);
   if (showUser) document.getElementById('userInfoName').textContent = `${userInfo.prenom} ${userInfo.nom}`;
   if (loggedIn) refreshAccess();
@@ -242,8 +189,7 @@ let userAccess = { hidden: [], planner: false };
 
 async function refreshAccess() {
   if (isAdmin()) {
-    // Le compte admin (mot de passe seul) n'a pas de profil, donc pas de desiderata
-    userAccess = { hidden: ['desiderata'], planner: true };
+    userAccess = { hidden: [], planner: true };
   } else {
     try {
       const p = await api('/api/profile');
@@ -749,20 +695,17 @@ function telLink(phone, cls = 'tel-link') {
 }
 
 document.addEventListener('click', e => {
-  // Fermer sidebar si clic sur le contenu principal (mobile)
-  if (window.innerWidth <= 768 && !e.target.closest('.sidebar') && !e.target.closest('.hamburger')) {
+  // Fermer sidebar si clic sur le contenu principal (mobile), sauf sur les
+  // boutons qui l'ouvrent (sinon elle se refermerait aussitôt)
+  if (window.innerWidth <= 768 && !e.target.closest('.sidebar, .hamburger, .tab-more')) {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('open');
   }
   if (e.target.classList.contains('modal')) closeModal(e.target.id);
-  if (e.target.classList.contains('login-overlay')) closeLogin();
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.modal:not(.hidden), .login-overlay:not(.hidden)').forEach(el => {
-      if (el.classList.contains('modal')) closeModal(el.id);
-      if (el.classList.contains('login-overlay')) closeLogin();
-    });
+    document.querySelectorAll('.modal:not(.hidden)').forEach(el => closeModal(el.id));
   }
 });
 

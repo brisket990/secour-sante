@@ -18,7 +18,7 @@ Il utilise maintenant un `Dockerfile` explicite, compatible Coolify.
 |---|---|---|
 | `TURSO_DATABASE_URL` | oui | URL de la base Turso (`libsql://...`), à recopier depuis Railway |
 | `TURSO_AUTH_TOKEN` | oui | Token Turso, à recopier depuis Railway |
-| `ADMIN_PASSWORD` | oui | Mot de passe admin. Sans lui, la valeur par défaut est `admin123` |
+| `ADMIN_PASSWORD` | non | Plus utilisée : l'accès admin par mot de passe seul a été retiré. Les admins se connectent avec leur compte (rôle « admin », attribué depuis la page Utilisateurs). La variable peut être supprimée |
 | `JWT_SECRET` | oui | Secret de signature des tokens. Sans lui, une valeur publique du dépôt est utilisée |
 | `PORT` | non | `3000` par défaut, Coolify le fournit généralement |
 | `DB_ALLOW_LOCAL_FALLBACK` | non | Voir « Base de données » ci-dessous. Laisser vide en production |

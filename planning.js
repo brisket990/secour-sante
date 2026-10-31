@@ -10,7 +10,8 @@ const TYPES = {
   both: { label: 'Jour et nuit', code: 'JN', fill: 'F2DCE6' },
 };
 const MENUS = ['hospitals', 'recherche', 'checklist', 'grandegarde', 'desiderata', 'contact'];
-const DEFAULT_SETTINGS = { open_from: 2, open_to: 3, max_per_month: 6, max_consecutive: 3, types: ['jour', 'nuit', 'both'] };
+// Par défaut : saisie possible du mois +2 jusqu'à deux ans après le mois en cours
+const DEFAULT_SETTINGS = { open_from: 2, open_to: 24, max_per_month: 6, max_consecutive: 3, types: ['jour', 'nuit', 'both'] };
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const WEEKDAYS_FR = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -59,8 +60,8 @@ function validateSettings(input) {
     max_consecutive: int(input.max_consecutive),
     types: Array.isArray(input.types) ? input.types.filter(t => TYPES[t]) : [],
   };
-  if (!(s.open_from >= 0 && s.open_from <= 12)) return { error: 'Premier mois ouvert : entre 0 et 12 mois à l\'avance' };
-  if (!(s.open_to >= s.open_from && s.open_to <= 12)) return { error: 'Dernier mois ouvert : après le premier et au plus 12 mois à l\'avance' };
+  if (!(s.open_from >= 0 && s.open_from <= 24)) return { error: 'Premier mois ouvert : entre 0 et 24 mois à l\'avance' };
+  if (!(s.open_to >= s.open_from && s.open_to <= 24)) return { error: 'Dernier mois ouvert : après le premier et au plus 24 mois à l\'avance' };
   if (!(s.max_per_month >= 1 && s.max_per_month <= 31)) return { error: 'Jours OFF par mois : entre 1 et 31' };
   if (!(s.max_consecutive >= 1 && s.max_consecutive <= 31)) return { error: 'Jours OFF à la suite : entre 1 et 31' };
   if (!s.types.length) return { error: 'Choisissez au moins un type de jour OFF' };
@@ -223,14 +224,13 @@ function registerPlanningRoutes(app, { get, all, run, requireAuth, signToken, ve
 
   async function currentUser(req) {
     if (!req.auth?.email) return null;
-    return get('SELECT id, nom, prenom, aph, hidden_menus, planner FROM users WHERE email = ?', [req.auth.email]);
+    return get('SELECT id, nom, prenom, aph, role, hidden_menus, planner FROM users WHERE email = ?', [req.auth.email]);
   }
 
-  // Admin ou utilisateur coché « fait le planning »
+  // Admin ou utilisateur coché « fait le planning » (rôle relu en base)
   async function requirePlanner(req, res, next) {
-    if (req.auth?.role === 'admin') return next();
     const user = await currentUser(req);
-    if (user && Number(user.planner) === 1) return next();
+    if (user && (user.role === 'admin' || Number(user.planner) === 1)) return next();
     res.status(403).json({ error: 'Réservé à la personne qui fait le planning' });
   }
 

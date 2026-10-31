@@ -32,10 +32,16 @@ async function loadDesiderata() {
 }
 
 function renderDesiderata() {
-  const tabs = document.getElementById('deMonths');
-  tabs.innerHTML = de.months.map(m => `
-    <button type="button" role="tab" class="seg-item ${m === deMonth ? 'active' : ''}" aria-selected="${m === deMonth}" onclick="deSelectMonth('${m}')">${monthLabel(m)}</button>
-  `).join('');
+  // Jusqu'à 24 mois ouverts : flèches mois par mois, ou liste pour sauter loin.
+  // Les mois où l'agent a déjà posé des OFF sont signalés dans la liste.
+  const select = document.getElementById('deMonthSelect');
+  select.innerHTML = de.months.map(m => {
+    const n = Object.keys(de.days).filter(d => d.startsWith(m)).length;
+    return `<option value="${m}" ${m === deMonth ? 'selected' : ''}>${monthLabel(m)}${n ? ` (${n} OFF)` : ''}</option>`;
+  }).join('');
+  const idx = de.months.indexOf(deMonth);
+  document.getElementById('dePrev').disabled = idx <= 0;
+  document.getElementById('deNext').disabled = idx >= de.months.length - 1;
 
   const n = daysIn(deMonth);
   const offset = (weekdayOf(`${deMonth}-01`) + 6) % 7; // lundi en premier
@@ -63,6 +69,11 @@ function renderDesiderata() {
 }
 
 function deSelectMonth(m) { deMonth = m; renderDesiderata(); }
+
+function deShiftMonth(n) {
+  const i = de.months.indexOf(deMonth) + n;
+  if (i >= 0 && i < de.months.length) deSelectMonth(de.months[i]);
+}
 
 function openDaySheet(day) {
   deDay = day;

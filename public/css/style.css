@@ -546,3 +546,14 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
   .pl-month { justify-content: space-between; }
   .pl-actions .btn { flex: 1; }
 }
+
+/* Navigation des mois (desiderata) */
+.de-nav { justify-content: space-between; }
+.de-month-select {
+  flex: 1; min-height: 44px; padding: 8px 12px; text-align: center; text-align-last: center;
+  font: inherit; font-weight: 600; font-size: 1rem; color: var(--text);
+  background: var(--card); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+}
+.icon-btn:disabled { opacity: 0.35; cursor: default; }
+.icon-btn { flex-shrink: 0; }
+.de-nav .icon-btn { width: 44px; height: 44px; }

@@ -33,14 +33,6 @@
         <div class="form-group"><label for="loginPassword">Mot de passe</label><input type="password" id="loginPassword" required autocomplete="current-password"></div>
         <p id="loginError" class="auth-error hidden"></p>
         <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
-        <p class="auth-admin-link"><a href="#" onclick="showAuthTab('adminLogin');return false"><i class="ph ph-lock-simple"></i> Accès admin</a></p>
-      </form>
-      <!-- Connexion admin -->
-      <form id="adminLoginForm" class="auth-form hidden" onsubmit="doLoginAdmin(event)">
-        <div class="form-group"><label for="adminPassword">Mot de passe admin</label><input type="password" id="adminPassword" required autocomplete="current-password"></div>
-        <p id="adminLoginError" class="auth-error hidden"></p>
-        <button type="submit" class="btn btn-primary btn-block">Connexion admin</button>
-        <p class="auth-admin-link"><a href="#" onclick="showAuthTab('login');return false"><i class="ph ph-caret-left"></i> Connexion utilisateur</a></p>
       </form>
       <!-- Inscription -->
       <form id="registerForm" class="auth-form hidden" onsubmit="doRegister(event)">
@@ -121,9 +113,6 @@
     <div class="sidebar-footer">
       <button id="userInfo" class="side-btn hidden" type="button" onclick="confirmLogout()">
         <i class="ph ph-sign-out nav-icon"></i><span id="userInfoName"></span>
-      </button>
-      <button id="adminToggle" class="side-btn" type="button" onclick="toggleAdmin()">
-        <i class="ph ph-lock-simple nav-icon"></i><span id="adminText">Admin</span>
       </button>
       <button class="side-btn" type="button" onclick="toggleDarkMode()">
         <i class="ph ph-moon nav-icon" id="darkIcon"></i><span id="darkText">Mode sombre</span>
@@ -296,7 +285,11 @@
           <p id="deRules">Touchez un jour pour le demander en OFF.</p>
         </div>
         <div class="de-wrap">
-          <div class="seg" id="deMonths" role="tablist" aria-label="Mois"></div>
+          <div class="pl-month de-nav">
+            <button type="button" class="icon-btn" id="dePrev" onclick="deShiftMonth(-1)" aria-label="Mois précédent"><i class="ph ph-caret-left"></i></button>
+            <select id="deMonthSelect" class="de-month-select" onchange="deSelectMonth(this.value)" aria-label="Mois"></select>
+            <button type="button" class="icon-btn" id="deNext" onclick="deShiftMonth(1)" aria-label="Mois suivant"><i class="ph ph-caret-right"></i></button>
+          </div>
           <div class="surface de-cal">
             <div class="de-cal-head">
               <h3 id="deMonthTitle"></h3>
@@ -333,8 +326,8 @@
           <h3><i class="ph ph-sliders-horizontal"></i> Règles des desiderata</h3>
           <form id="plSettingsForm" onsubmit="savePlanningSettings(event)">
             <div class="form-row">
-              <div class="form-group"><label for="setOpenFrom">Premier mois ouvert</label><input type="number" id="setOpenFrom" min="0" max="12" required><small class="form-help">Nombre de mois après le mois en cours (2 = dans deux mois).</small></div>
-              <div class="form-group"><label for="setOpenTo">Dernier mois ouvert</label><input type="number" id="setOpenTo" min="0" max="12" required></div>
+              <div class="form-group"><label for="setOpenFrom">Premier mois ouvert</label><input type="number" id="setOpenFrom" min="0" max="24" required><small class="form-help">Nombre de mois après le mois en cours (2 = dans deux mois).</small></div>
+              <div class="form-group"><label for="setOpenTo">Dernier mois ouvert</label><input type="number" id="setOpenTo" min="0" max="24" required><small class="form-help">24 = deux ans après le mois en cours.</small></div>
             </div>
             <div class="form-row">
               <div class="form-group"><label for="setMaxMonth">Jours OFF par mois, au maximum</label><input type="number" id="setMaxMonth" min="1" max="31" required></div>
@@ -400,21 +393,8 @@
     <a href="#" class="tab-item" data-view="checklist" onclick="return showView('checklist')"><i class="ph ph-clipboard-text"></i><span>Check-list</span></a>
     <a href="#" class="tab-item" data-view="desiderata" onclick="return showView('desiderata')"><i class="ph ph-calendar-check"></i><span>Desiderata</span></a>
     <a href="#" class="tab-item" data-view="grandegarde" onclick="return showView('grandegarde')"><i class="ph ph-first-aid-kit"></i><span>Garde</span></a>
-    <a href="#" class="tab-item" onclick="toggleSidebar();return false"><i class="ph ph-list"></i><span>Plus</span></a>
+    <a href="#" class="tab-item tab-more" onclick="toggleSidebar();return false"><i class="ph ph-list"></i><span>Plus</span></a>
   </nav>
-
-  <!-- Connexion admin (depuis l'application) -->
-  <div id="loginOverlay" class="login-overlay hidden">
-    <div class="login-box">
-      <h2>Accès administrateur</h2>
-      <input type="password" id="loginPassword" placeholder="Mot de passe" onkeydown="if(event.key==='Enter') doLogin()">
-      <p id="loginError" class="login-error hidden">Mot de passe incorrect</p>
-      <div class="login-actions">
-        <button class="btn btn-secondary" type="button" onclick="closeLogin()">Annuler</button>
-        <button class="btn btn-primary" type="button" onclick="doLogin()">Connexion</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Choix du type de OFF pour un jour -->
   <div id="daySheet" class="modal sheet hidden">

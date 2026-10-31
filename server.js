@@ -11,7 +11,6 @@ BigInt.prototype.toJSON = function() { return Number(this); };
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const JWT_SECRET = process.env.JWT_SECRET || 'readirect-secret-change-in-prod';
 
 // Envoi d'e-mail optionnel : actif seulement si SMTP_HOST/USER/PASS sont definis.
@@ -40,17 +39,27 @@ function verifyToken(token, scope) {
   } catch { return null; }
 }
 
-function requireAuth(req, res, next) {
+// Jeton de session : toujours lié à un compte (email). Les anciens jetons de
+// l'accès admin par mot de passe seul, sans email, ne sont plus acceptés.
+function sessionToken(req) {
   const decoded = verifyToken(req.headers.authorization?.replace('Bearer ', ''));
-  if (!decoded || decoded.role !== 'admin') {
+  return decoded && decoded.email ? decoded : null;
+}
+
+// Admin = compte dont le rôle est « admin » en base, relu à chaque requête :
+// une nomination ou un retrait prend effet sans avoir à se reconnecter.
+async function requireAuth(req, res, next) {
+  const decoded = sessionToken(req);
+  const user = decoded && await get('SELECT role, status FROM users WHERE email = ?', [decoded.email]);
+  if (!user || user.role !== 'admin' || user.status !== 'approved') {
     return res.status(401).json({ error: 'Non autorisé' });
   }
-  req.auth = decoded;
+  req.auth = { ...decoded, role: 'admin' };
   next();
 }
 
 function requireAnyAuth(req, res, next) {
-  const decoded = verifyToken(req.headers.authorization?.replace('Bearer ', ''));
+  const decoded = sessionToken(req);
   if (!decoded) return res.status(401).json({ error: 'Connectez-vous' });
   req.auth = decoded;
   next();
@@ -71,14 +80,9 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/login', async (req, res) => {
-  const { password } = req.body;
-  if (password === ADMIN_PASSWORD) {
-    const token = signToken({ role: 'admin' });
-    return res.json({ token, role: 'admin' });
-  }
-  // Sans email c'est une tentative admin au mauvais mot de passe : ne pas
-  // interroger la base avec un email undefined (rejete par Turso).
-  if (!req.body.email) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
+  // Connexion uniquement par compte (email + mot de passe). Ne pas interroger
+  // la base avec un email undefined (rejeté par Turso).
+  if (!req.body.email || !req.body.password) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
   const user = await get('SELECT * FROM users WHERE email = ?', [req.body.email]);
   if (!user) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
   if (user.status !== 'approved') return res.status(403).json({ error: 'Compte en attente de validation' });
@@ -158,11 +162,12 @@ app.delete('/api/users/:id', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-app.get('/api/me', (req, res) => {
-  const decoded = verifyToken(req.headers.authorization?.replace('Bearer ', ''));
+app.get('/api/me', async (req, res) => {
+  const decoded = sessionToken(req);
   if (!decoded) return res.json({ authed: false });
-  if (decoded.role === 'admin') return res.json({ authed: true, role: 'admin' });
-  res.json({ authed: true, role: decoded.role, user: decoded });
+  const user = await get('SELECT nom, prenom, email, smur, role, status FROM users WHERE email = ?', [decoded.email]);
+  if (!user || user.status !== 'approved') return res.json({ authed: false });
+  res.json({ authed: true, role: user.role, user: { nom: user.nom, prenom: user.prenom, email: user.email, smur: user.smur } });
 });
 
 app.post('/api/logout', (req, res) => {
