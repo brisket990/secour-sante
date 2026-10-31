@@ -237,6 +237,33 @@ app.get('/api/hospitals/:id', requireAnyAuth, async (req, res) => {
   res.json(hospital);
 });
 
+// Recherche d'un lieu pour remplir la fiche hôpital (admin). Passe par le
+// serveur pour s'identifier auprès de Nominatim (OpenStreetMap), comme le
+// demande sa politique d'usage, et limiter les requêtes aux admins.
+const GEOCODE_UA = 'SMUR-Beaujon/2.1 (https://github.com/brisket990/secour-sante)';
+app.get('/api/geocode', requireAuth, async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (q.length < 3) return res.json([]);
+  const url = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
+    format: 'jsonv2', addressdetails: '1', limit: '6', countrycodes: 'fr', 'accept-language': 'fr', q,
+  });
+  const r = await fetch(url, { headers: { 'User-Agent': GEOCODE_UA }, signal: AbortSignal.timeout(8000) });
+  if (!r.ok) return res.status(502).json({ error: 'Recherche indisponible pour le moment' });
+  const places = await r.json();
+  res.json(places.map(p => {
+    const a = p.address || {};
+    const street = [a.house_number, a.road].filter(Boolean).join(' ');
+    const city = [a.postcode, a.city || a.town || a.village || a.municipality].filter(Boolean).join(' ');
+    return {
+      name: p.name || '',
+      address: [street, city].filter(Boolean).join(', ') || p.display_name,
+      detail: p.display_name,
+      lat: Number(p.lat),
+      lng: Number(p.lon),
+    };
+  }));
+});
+
 app.post('/api/hospitals', requireAuth, async (req, res) => {
   const { name, address, phone, lat, lng } = req.body;
   if (!name || !address) return res.status(400).json({ error: 'Nom et adresse requis' });

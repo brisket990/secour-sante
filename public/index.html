@@ -451,12 +451,28 @@
       </div>
       <form id="hospitalForm" onsubmit="saveHospital(event)">
         <input type="hidden" id="hId">
+        <div class="form-group geo-search">
+          <label for="hSearch">Rechercher l'hôpital ou l'adresse</label>
+          <div class="geo-input">
+            <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+            <input type="search" id="hSearch" placeholder="Beaujon Clichy, 100 bd du Général Leclerc" autocomplete="off" oninput="geoSearch()">
+          </div>
+          <div class="geo-results" id="hResults" role="listbox" aria-label="Résultats"></div>
+          <small class="form-help">Choisir un résultat remplit l'adresse et la position. Source : OpenStreetMap.</small>
+        </div>
         <div class="form-group"><label for="hName">Nom</label><input type="text" id="hName" required></div>
         <div class="form-group"><label for="hAddress">Adresse</label><input type="text" id="hAddress" required></div>
         <div class="form-group"><label for="hPhone">Téléphone</label><input type="tel" id="hPhone"></div>
+        <div class="geo-map-wrap">
+          <div id="hMap" class="geo-map" aria-label="Carte : touchez pour placer l'entrée"></div>
+          <div class="geo-map-foot">
+            <small class="form-help">Touchez la carte ou déplacez le repère pour placer l'entrée.</small>
+            <a href="#" onclick="checkInGoogleMaps();return false"><i class="ph ph-google-logo"></i> Vérifier dans Google Maps</a>
+          </div>
+        </div>
         <div class="form-row">
-          <div class="form-group"><label for="hLat">Latitude</label><input type="number" step="any" id="hLat"></div>
-          <div class="form-group"><label for="hLng">Longitude</label><input type="number" step="any" id="hLng"></div>
+          <div class="form-group"><label for="hLat">Latitude</label><input type="number" step="any" id="hLat" oninput="syncMarkerFromInputs()"></div>
+          <div class="form-group"><label for="hLng">Longitude</label><input type="number" step="any" id="hLng" oninput="syncMarkerFromInputs()"></div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('hospitalModal')">Annuler</button>
