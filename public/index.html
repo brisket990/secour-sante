@@ -2,115 +2,126 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RéaDirect - Annuaire Réanimation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f2a5c">
+  <title>SMUR Beaujon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/checklist.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Auth screen -->
+  <!-- Écran de connexion -->
   <div id="authScreen" class="auth-screen">
     <div class="auth-box">
       <div class="auth-logo">
-        <div class="auth-logo-icon">RD</div>
-        <h1>RéaDirect</h1>
-        <p class="auth-sub">Annuaire Réanimation</p>
+        <div class="brand-mark">SB</div>
+        <div>
+          <h1>SMUR Beaujon</h1>
+          <p class="auth-sub">Annuaire et Aide pour Ambulancier SMUR</p>
+        </div>
       </div>
-      <div class="auth-tabs">
-        <button class="auth-tab active" id="tabLogin" onclick="showAuthTab('login')">Connexion</button>
-        <button class="auth-tab" id="tabRegister" onclick="showAuthTab('register')">Créer un compte</button>
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" id="tabLogin" type="button" onclick="showAuthTab('login')">Connexion</button>
+        <button class="auth-tab" id="tabRegister" type="button" onclick="showAuthTab('register')">Créer un compte</button>
       </div>
-      <!-- Login -->
+      <!-- Connexion -->
       <form id="loginForm" class="auth-form" onsubmit="doLoginUser(event)">
-        <div class="form-group"><label>Email</label><input type="email" id="loginEmail" required placeholder="nom@aphp.fr"></div>
-        <div class="form-group"><label>Mot de passe</label><input type="password" id="loginPassword" required></div>
+        <div class="form-group"><label for="loginEmail">Email</label><input type="email" id="loginEmail" required placeholder="prenom.nom@aphp.fr" autocomplete="username"></div>
+        <div class="form-group"><label for="loginPassword">Mot de passe</label><input type="password" id="loginPassword" required autocomplete="current-password"></div>
         <p id="loginError" class="auth-error hidden"></p>
-        <button type="submit" class="btn btn-primary" style="width:100%">Se connecter</button>
-        <p class="auth-admin-link"><a href="#" onclick="showAuthTab('adminLogin');return false">🔒 Accès admin</a></p>
+        <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
+        <p class="auth-admin-link"><a href="#" onclick="showAuthTab('adminLogin');return false"><i class="ph ph-lock-simple"></i> Accès admin</a></p>
       </form>
-      <!-- Admin login -->
+      <!-- Connexion admin -->
       <form id="adminLoginForm" class="auth-form hidden" onsubmit="doLoginAdmin(event)">
-        <div class="form-group"><label>Mot de passe admin</label><input type="password" id="adminPassword" required></div>
+        <div class="form-group"><label for="adminPassword">Mot de passe admin</label><input type="password" id="adminPassword" required autocomplete="current-password"></div>
         <p id="adminLoginError" class="auth-error hidden"></p>
-        <button type="submit" class="btn btn-primary" style="width:100%">Connexion admin</button>
-        <p class="auth-admin-link"><a href="#" onclick="showAuthTab('login');return false">← Connexion utilisateur</a></p>
+        <button type="submit" class="btn btn-primary btn-block">Connexion admin</button>
+        <p class="auth-admin-link"><a href="#" onclick="showAuthTab('login');return false"><i class="ph ph-caret-left"></i> Connexion utilisateur</a></p>
       </form>
-      <!-- Register -->
+      <!-- Inscription -->
       <form id="registerForm" class="auth-form hidden" onsubmit="doRegister(event)">
         <div class="form-row">
-          <div class="form-group"><label>Nom *</label><input type="text" id="regNom" required></div>
-          <div class="form-group"><label>Prénom *</label><input type="text" id="regPrenom" required></div>
+          <div class="form-group"><label for="regNom">Nom</label><input type="text" id="regNom" required autocomplete="family-name"></div>
+          <div class="form-group"><label for="regPrenom">Prénom</label><input type="text" id="regPrenom" required autocomplete="given-name"></div>
         </div>
-        <div class="form-group"><label>Email @APHP *</label><input type="email" id="regEmail" required placeholder="prenom.nom@aphp.fr"></div>
-        <div class="form-group"><label>SMUR actuel *</label><input type="text" id="regSmur" required placeholder="ex: SMUR Bordeaux"></div>
-        <div class="form-group"><label>Mot de passe *</label><input type="password" id="regPassword" required minlength="6"></div>
+        <div class="form-group"><label for="regEmail">Email AP-HP</label><input type="email" id="regEmail" required placeholder="prenom.nom@aphp.fr" autocomplete="email"></div>
+        <div class="form-group">
+          <label for="regAph">Numéro APH</label>
+          <input type="text" id="regAph" required inputmode="numeric" maxlength="20" pattern="[0-9A-Za-z]+" autocomplete="off">
+          <small class="form-help">Sert à pré-remplir la check-list de prise de poste.</small>
+        </div>
+        <div class="form-group"><label for="regPassword">Mot de passe</label><input type="password" id="regPassword" required minlength="6" autocomplete="new-password"><small class="form-help">6 caractères minimum.</small></div>
         <p id="registerError" class="auth-error hidden"></p>
         <p id="registerSuccess" class="auth-success hidden"></p>
-        <button type="submit" class="btn btn-primary" style="width:100%">Créer mon compte</button>
+        <button type="submit" class="btn btn-primary btn-block">Créer mon compte</button>
       </form>
     </div>
   </div>
 
-  <!-- Main app -->
+  <!-- Application -->
   <div id="appRoot" class="app-root hidden">
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header">
       <div class="logo">
-        <div class="logo-icon">RD</div>
+        <div class="brand-mark">SB</div>
         <div class="logo-text">
-          <span class="logo-title">RéaDirect</span>
-          <span class="logo-sub">Annuaire Réanimation</span>
+          <span class="logo-title">SMUR Beaujon</span>
+          <span class="logo-sub">Annuaire et Aide pour Ambulancier SMUR</span>
         </div>
-        <div class="aphp-badge">AP-HP</div>
       </div>
     </div>
     <nav class="sidebar-nav">
-      <a id="navInbox" class="nav-item hidden" href="#" onclick="return showView('inbox')">
-        <span class="nav-icon">📬</span><span>Messages reçus</span>
-        <span class="nav-badge" id="inboxCount">0</span>
-      </a>
-      <a id="navCandidatures" class="nav-item hidden" href="#" onclick="return showView('candidatures')">
-        <span class="nav-icon">👤</span><span>Candidatures</span>
-        <span class="nav-badge" id="candidaturesCount">0</span>
-      </a>
-      <a id="navUsers" class="nav-item hidden" href="#" onclick="return showView('users')">
-        <span class="nav-icon">👥</span><span>Utilisateurs</span>
-      </a>
-      <a class="nav-item active" href="#" onclick="return showView('hospitals')">
-        <span class="nav-icon">🏥</span><span>Hôpitaux</span>
+      <div id="navAdminGroup" class="nav-group hidden">
+        <span class="nav-group-title">Administration</span>
+        <a id="navInbox" class="nav-item" href="#" data-view="inbox" onclick="return showView('inbox')">
+          <i class="ph ph-tray nav-icon"></i><span>Messages reçus</span>
+          <span class="nav-badge" id="inboxCount">0</span>
+        </a>
+        <a id="navCandidatures" class="nav-item" href="#" data-view="candidatures" onclick="return showView('candidatures')">
+          <i class="ph ph-user-plus nav-icon"></i><span>Candidatures</span>
+          <span class="nav-badge" id="candidaturesCount">0</span>
+        </a>
+        <a id="navUsers" class="nav-item" href="#" data-view="users" onclick="return showView('users')">
+          <i class="ph ph-users nav-icon"></i><span>Utilisateurs</span>
+        </a>
+      </div>
+      <a class="nav-item active" href="#" data-view="hospitals" onclick="return showView('hospitals')">
+        <i class="ph ph-hospital nav-icon"></i><span>Hôpitaux</span>
         <span class="nav-badge" id="hospitalCount">0</span>
       </a>
-      <a class="nav-item" href="#" onclick="return showView('grandegarde')">
-        <span class="nav-icon">🛡️</span><span>Grande garde</span>
+      <a class="nav-item" href="#" data-view="recherche" onclick="return showView('recherche')">
+        <i class="ph ph-magnifying-glass nav-icon"></i><span>Recherche rapide</span>
       </a>
-      <a id="navChecklist" class="nav-item hidden" href="#" onclick="return showView('checklist')">
-        <span class="nav-icon">✅</span><span>Check-list</span>
+      <a id="navChecklist" class="nav-item" href="#" data-view="checklist" onclick="return showView('checklist')">
+        <i class="ph ph-clipboard-text nav-icon"></i><span>Check-list</span>
       </a>
-      <a class="nav-item" href="#" onclick="return showView('recherche')">
-        <span class="nav-icon">🔍</span><span>Recherche rapide</span>
+      <a class="nav-item" href="#" data-view="grandegarde" onclick="return showView('grandegarde')">
+        <i class="ph ph-first-aid-kit nav-icon"></i><span>Grande garde</span>
       </a>
-      <a class="nav-item" href="#" onclick="return showView('contact')">
-        <span class="nav-icon">✉️</span><span>Contact</span>
+      <a class="nav-item" href="#" data-view="contact" onclick="return showView('contact')">
+        <i class="ph ph-envelope-simple nav-icon"></i><span>Proposer une modification</span>
       </a>
-      <a id="navProfile" class="nav-item hidden" href="#" onclick="return showView('profile')">
-        <span class="nav-icon">🪪</span><span>Mon profil</span>
+      <a id="navProfile" class="nav-item hidden" href="#" data-view="profile" onclick="return showView('profile')">
+        <i class="ph ph-identification-card nav-icon"></i><span>Mon profil</span>
       </a>
-      <a class="nav-item" href="#" onclick="return showView('infos')">
-        <span class="nav-icon">ℹ️</span><span>À propos</span>
+      <a class="nav-item" href="#" data-view="infos" onclick="return showView('infos')">
+        <i class="ph ph-info nav-icon"></i><span>À propos</span>
       </a>
     </nav>
     <div class="sidebar-footer">
-      <button id="userInfo" class="admin-btn hidden" onclick="confirmLogout()" style="display:none">
-        <span class="nav-icon">🚪</span><span id="userInfoName"></span>
+      <button id="userInfo" class="side-btn hidden" type="button" onclick="confirmLogout()">
+        <i class="ph ph-sign-out nav-icon"></i><span id="userInfoName"></span>
       </button>
-      <button id="adminToggle" class="admin-btn" onclick="toggleAdmin()">
-        <span class="nav-icon">🔒</span><span id="adminText">Admin</span>
+      <button id="adminToggle" class="side-btn" type="button" onclick="toggleAdmin()">
+        <i class="ph ph-lock-simple nav-icon"></i><span id="adminText">Admin</span>
       </button>
-      <button class="admin-btn" onclick="toggleDarkMode()" style="margin-top:0.4rem">
-        <span class="nav-icon" id="darkIcon">🌙</span><span id="darkText">Dark mode</span>
+      <button class="side-btn" type="button" onclick="toggleDarkMode()">
+        <i class="ph ph-moon nav-icon" id="darkIcon"></i><span id="darkText">Mode sombre</span>
       </button>
-      <span class="sidebar-version">RéaDirect v1.0</span>
     </div>
   </aside>
 
@@ -118,15 +129,16 @@
 
   <div class="main-wrapper">
     <header class="topbar">
-      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <button class="hamburger" type="button" onclick="toggleSidebar()" aria-label="Menu"><i class="ph ph-list"></i></button>
+      <span class="topbar-title">SMUR Beaujon</span>
       <div class="topbar-actions">
         <span id="adminBadge" class="admin-badge hidden">Admin</span>
-        <button class="btn btn-primary btn-sm" id="addBtn" onclick="showHospitalModal()" style="display:none">+ Ajouter</button>
+        <button class="btn btn-primary btn-sm" id="addBtn" type="button" onclick="showHospitalModal()" style="display:none"><i class="ph ph-plus"></i> Hôpital</button>
       </div>
     </header>
 
     <main>
-      <!-- Vue Hôpitaux -->
+      <!-- Hôpitaux -->
       <div id="view-hospitals" class="view active">
         <div class="view-header">
           <h2>Hôpitaux</h2>
@@ -136,125 +148,127 @@
           <div class="panel panel-list" id="hospitalList"></div>
           <div class="panel panel-detail" id="hospitalDetail">
             <div class="empty-detail">
-              <div class="empty-icon">🏥</div>
+              <i class="ph ph-hospital empty-icon"></i>
               <h3>Sélectionnez un hôpital</h3>
-              <p>Cliquez sur un hôpital dans la liste pour voir ses services</p>
+              <p>Ses services, étages et codes s'afficheront ici.</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Vue Recherche rapide -->
+      <!-- Recherche rapide -->
       <div id="view-recherche" class="view">
         <div class="view-header">
           <h2>Recherche rapide</h2>
-          <p>Tapez un service, un étage, un mot-clé...</p>
+          <p>Un hôpital, un service, une adresse</p>
         </div>
         <div class="quick-search">
-          <input type="text" id="quickSearchInput" placeholder="Ex: SAMU, Réanimation, Urgences..." oninput="quickSearch()">
+          <i class="ph ph-magnifying-glass"></i>
+          <input type="search" id="quickSearchInput" placeholder="Réanimation, Bichat, déchocage..." oninput="quickSearch()" aria-label="Rechercher">
         </div>
         <div id="quickResults" class="quick-results"></div>
       </div>
 
-      <!-- Vue Contact -->
+      <!-- Contact -->
       <div id="view-contact" class="view">
         <div class="view-header">
-          <h2>✉️ Proposer une modification</h2>
-          <p>Nouvel hôpital, nouveau service, correction...</p>
+          <h2>Proposer une modification</h2>
+          <p>Nouvel hôpital, nouveau service, code qui a changé</p>
         </div>
-        <div class="about-card" style="max-width:600px">
+        <div class="surface narrow">
           <form id="contactForm" onsubmit="sendContact(event)">
-            <div class="form-group"><label>Votre nom *</label><input type="text" id="contactName" required></div>
-            <div class="form-group"><label>Votre email *</label><input type="email" id="contactEmail" required></div>
-            <div class="form-group"><label>Type de demande</label>
-              <select id="contactType" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--input-bg);color:var(--text)" onchange="toggleContactHospital()">
-                <option value="new_hospital">🏥 Nouvel hôpital</option>
-                <option value="new_service">➕ Nouveau service</option>
-                <option value="correction">✏️ Correction / Modification</option>
-                <option value="other">📝 Autre</option>
+            <div class="form-row">
+              <div class="form-group"><label for="contactName">Votre nom</label><input type="text" id="contactName" required></div>
+              <div class="form-group"><label for="contactEmail">Votre email</label><input type="email" id="contactEmail" required></div>
+            </div>
+            <div class="form-group"><label for="contactType">Type de demande</label>
+              <select id="contactType" onchange="toggleContactHospital()">
+                <option value="new_hospital">Nouvel hôpital</option>
+                <option value="new_service">Nouveau service</option>
+                <option value="correction">Correction ou modification</option>
+                <option value="other">Autre</option>
               </select>
             </div>
             <div id="contactHospitalFields">
-              <div class="form-group"><label>Hôpital concerné</label><input type="text" id="contactHospital" placeholder="Nom de l'hôpital"></div>
-              <div class="form-group"><label>Service</label><input type="text" id="contactService" placeholder="Nom du service"></div>
               <div class="form-row">
-                <div class="form-group"><label>Bâtiment / Site</label><input type="text" id="contactBuilding" placeholder="ex: Bâtiment Nord"></div>
-                <div class="form-group"><label>Étage</label><input type="text" id="contactFloor" placeholder="ex: 3e étage"></div>
+                <div class="form-group"><label for="contactHospital">Hôpital concerné</label><input type="text" id="contactHospital"></div>
+                <div class="form-group"><label for="contactService">Service</label><input type="text" id="contactService"></div>
               </div>
               <div class="form-row">
-                <div class="form-group"><label>Code porte</label><input type="text" id="contactDoorCode" placeholder="ex: Code 1234"></div>
-                <div class="form-group"><label>Téléphone direct</label><input type="text" id="contactPhone" placeholder="ex: 01 42 16 01 10"></div>
+                <div class="form-group"><label for="contactBuilding">Bâtiment ou site</label><input type="text" id="contactBuilding" placeholder="Bâtiment Nord"></div>
+                <div class="form-group"><label for="contactFloor">Étage</label><input type="text" id="contactFloor" placeholder="3e étage"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label for="contactDoorCode">Code porte</label><input type="text" id="contactDoorCode"></div>
+                <div class="form-group"><label for="contactPhone">Téléphone direct</label><input type="tel" id="contactPhone"></div>
               </div>
             </div>
-            <div class="form-group"><label>Message / Description *</label>
-              <textarea id="contactMessage" rows="4" required placeholder="Décrivez les informations à ajouter ou modifier..."></textarea>
+            <div class="form-group"><label for="contactMessage">Message</label>
+              <textarea id="contactMessage" rows="4" required placeholder="Ce qu'il faut ajouter ou corriger"></textarea>
             </div>
-            <div class="form-actions"><button type="submit" class="btn btn-primary">Envoyer la proposition</button></div>
-            <div id="contactSuccess" class="contact-success hidden">✅ Message envoyé ! Merci pour votre contribution.</div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Envoyer</button></div>
+            <div id="contactSuccess" class="contact-success hidden"><i class="ph ph-check-circle"></i> Message envoyé. Merci pour votre contribution.</div>
           </form>
         </div>
       </div>
 
-      <!-- Vue Inbox (admin) -->
+      <!-- Messages (admin) -->
       <div id="view-inbox" class="view">
         <div class="view-header">
-          <h2>📬 Messages reçus</h2>
-          <p>Retours des utilisateurs</p>
+          <h2>Messages reçus</h2>
+          <p>Propositions envoyées par les utilisateurs</p>
         </div>
         <div id="inboxList" class="inbox-list"></div>
       </div>
 
-      <!-- Vue Candidatures (admin) -->
+      <!-- Candidatures (admin) -->
       <div id="view-candidatures" class="view">
         <div class="view-header">
-          <h2>👤 Candidatures</h2>
+          <h2>Candidatures</h2>
           <p>Comptes en attente de validation</p>
         </div>
         <div id="candidaturesList" class="inbox-list"></div>
       </div>
 
-      <!-- Vue Utilisateurs (admin) -->
+      <!-- Utilisateurs (admin) -->
       <div id="view-users" class="view">
         <div class="view-header">
-          <h2>👥 Utilisateurs</h2>
-          <p>Gestion de tous les comptes</p>
+          <h2>Utilisateurs</h2>
+          <p>Tous les comptes</p>
         </div>
         <div id="usersList" class="inbox-list"></div>
       </div>
 
-      <!-- Vue Grande garde -->
+      <!-- Grande garde -->
       <div id="view-grandegarde" class="view">
-        <div class="view-header">
-          <h2>🛡️ Grande garde</h2>
-          <p>Grande Garde</p>
+        <div class="view-header view-header-actions">
+          <div>
+            <h2>Grande garde</h2>
+            <p>Protocoles à portée de main</p>
+          </div>
+          <button class="btn btn-primary btn-sm" id="addProtocolBtn" type="button" onclick="showProtocolModal()" style="display:none"><i class="ph ph-plus"></i> Protocole</button>
         </div>
-        <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
-          <button class="btn btn-primary btn-sm" id="addProtocolBtn" onclick="showProtocolModal()" style="display:none">+ Ajouter</button>
-        </div>
-        <div class="about-card" style="max-width:600px">
-          <div id="protocolList" class="gg-links"></div>
-        </div>
+        <div id="protocolList" class="gg-links narrow"></div>
       </div>
 
-      <!-- Vue Check-list (SMUR Beaujon uniquement) -->
+      <!-- Check-list -->
       <div id="view-checklist" class="view cl">
         <div class="cl-wrap" id="cl-menu">
-          <div class="cl-head">
-            <span class="cl-tag">SMUR Beaujon · prise de poste</span>
+          <div class="view-header">
             <h2>Quelle check-list ?</h2>
-            <p>Choisis le véhicule. La saisie ouvre ensuite le formulaire pré-rempli dans le navigateur.</p>
+            <p>Choisissez le véhicule. Le formulaire s'ouvre ensuite pré-rempli dans le navigateur.</p>
           </div>
           <div class="cl-menu" id="cl-picks"></div>
         </div>
         <div class="cl-wrap" id="cl-app" hidden>
-          <button class="cl-back" id="cl-backBtn" type="button">‹ Changer de check-list</button>
+          <button class="cl-back" id="cl-backBtn" type="button"><i class="ph ph-caret-left"></i> Changer de check-list</button>
           <div class="cl-head">
             <span class="cl-tag" id="cl-tag"></span>
             <h2 id="cl-title"></h2>
-            <p>Saisis les relevés, signale les écarts. Tout le reste est coché conforme. Le bouton ouvre le formulaire pré-rempli : il ne reste qu'à faire Suivant jusqu'à Envoyer.</p>
+            <p>Saisissez les relevés et signalez les écarts. Tout le reste est coché conforme. Il ne restera qu'à faire Suivant jusqu'à Envoyer.</p>
           </div>
-          <section class="cl-card"><h3>Relevés du jour</h3><div id="cl-quickFields" style="display:flex;flex-direction:column;gap:14px"></div></section>
-          <div id="cl-sections" style="display:flex;flex-direction:column;gap:14px"></div>
+          <section class="cl-card"><h3>Relevés du jour</h3><div id="cl-quickFields" class="cl-stack"></div></section>
+          <div id="cl-sections" class="cl-stack"></div>
           <section class="cl-card">
             <h3>Clôture</h3>
             <div class="cl-field" id="cl-obs-field"><label for="cl-obs">Observations diverses <small>(facultatif)</small></label><textarea id="cl-obs"></textarea></div>
@@ -263,79 +277,90 @@
             <button class="cl-reset" id="cl-reset" type="button">Tout remettre à conforme</button>
           </section>
           <div class="cl-bar">
-            <a class="cl-go" id="cl-go" href="#" aria-disabled="true">Ouvrir le formulaire pré-rempli</a>
+            <a class="cl-go" id="cl-go" href="#" aria-disabled="true">Ouvrir le formulaire</a>
             <p id="cl-msg"></p>
           </div>
         </div>
       </div>
 
-      <!-- Vue Profil (utilisateurs) -->
+      <!-- Profil -->
       <div id="view-profile" class="view">
         <div class="view-header">
-          <h2>🪪 Mon profil</h2>
+          <h2>Mon profil</h2>
           <p>Vos informations de compte</p>
         </div>
-        <div class="about-card" style="max-width:600px">
+        <div class="surface narrow">
           <form id="profileForm" onsubmit="saveProfile(event)">
             <div class="form-row">
-              <div class="form-group"><label>Nom</label><input type="text" id="profNom" disabled></div>
-              <div class="form-group"><label>Prénom</label><input type="text" id="profPrenom" disabled></div>
+              <div class="form-group"><label for="profNom">Nom</label><input type="text" id="profNom" disabled></div>
+              <div class="form-group"><label for="profPrenom">Prénom</label><input type="text" id="profPrenom" disabled></div>
             </div>
-            <div class="form-group"><label>Email</label><input type="text" id="profEmail" disabled></div>
-            <div class="form-group"><label>SMUR</label><input type="text" id="profSmur" disabled></div>
-            <div class="form-group"><label>Numéro APH</label><input type="text" id="profAph" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="ex: 1234567"></div>
-            <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.85rem">Sert à pré-remplir la check-list de prise de poste.</p>
+            <div class="form-group"><label for="profEmail">Email</label><input type="text" id="profEmail" disabled></div>
+            <div class="form-group">
+              <label for="profAph">Numéro APH</label>
+              <input type="text" id="profAph" inputmode="numeric" maxlength="20" autocomplete="off">
+              <small class="form-help">Sert à pré-remplir la check-list de prise de poste.</small>
+            </div>
             <div class="form-actions"><button type="submit" class="btn btn-primary">Enregistrer</button></div>
-            <div id="profileSuccess" class="contact-success hidden">✅ Profil enregistré.</div>
+            <div id="profileSuccess" class="contact-success hidden"><i class="ph ph-check-circle"></i> Profil enregistré.</div>
           </form>
         </div>
       </div>
 
-      <!-- Vue Infos -->
+      <!-- À propos -->
       <div id="view-infos" class="view">
         <div class="view-header"><h2>À propos</h2></div>
-        <div class="about-card">
-          <div class="about-logo">🚑</div>
-          <h3>RéaDirect</h3>
-          <p>Annuaire des services hospitaliers pour ambulances de réanimation.</p>
-          <div class="about-features">
-            <div class="feature"><span class="feature-icon">📍</span> Navigation GPS intégrée</div>
-            <div class="feature"><span class="feature-icon">🔄</span> Données modifiables en temps réel</div>
-          </div>
+        <div class="surface narrow about">
+          <div class="brand-mark brand-mark-lg">SB</div>
+          <h3>SMUR Beaujon</h3>
+          <p>Annuaire et aide pour les ambulanciers du SMUR Beaujon : services hospitaliers, codes d'accès, protocoles et check-lists de prise de poste.</p>
+          <ul class="about-features">
+            <li><i class="ph ph-navigation-arrow"></i> Itinéraire direct dans Google Maps ou Waze</li>
+            <li><i class="ph ph-clipboard-text"></i> Check-list UMH et VL pré-remplie</li>
+            <li><i class="ph ph-envelope-simple"></i> Corrections proposées par les équipes</li>
+          </ul>
         </div>
       </div>
     </main>
   </div>
 
-  <!-- Login Modal -->
+  <!-- Barre d'onglets (mobile) -->
+  <nav class="tabbar" aria-label="Navigation principale">
+    <a href="#" class="tab-item active" data-view="hospitals" onclick="return showView('hospitals')"><i class="ph ph-hospital"></i><span>Hôpitaux</span></a>
+    <a href="#" class="tab-item" data-view="recherche" onclick="return showView('recherche')"><i class="ph ph-magnifying-glass"></i><span>Recherche</span></a>
+    <a href="#" class="tab-item" data-view="checklist" onclick="return showView('checklist')"><i class="ph ph-clipboard-text"></i><span>Check-list</span></a>
+    <a href="#" class="tab-item" data-view="grandegarde" onclick="return showView('grandegarde')"><i class="ph ph-first-aid-kit"></i><span>Garde</span></a>
+    <a href="#" class="tab-item" onclick="toggleSidebar();return false"><i class="ph ph-list"></i><span>Plus</span></a>
+  </nav>
+
+  <!-- Connexion admin (depuis l'application) -->
   <div id="loginOverlay" class="login-overlay hidden">
     <div class="login-box">
-      <div class="login-icon">🔒</div>
       <h2>Accès administrateur</h2>
       <input type="password" id="loginPassword" placeholder="Mot de passe" onkeydown="if(event.key==='Enter') doLogin()">
       <p id="loginError" class="login-error hidden">Mot de passe incorrect</p>
       <div class="login-actions">
-        <button class="btn btn-secondary" onclick="closeLogin()">Annuler</button>
-        <button class="btn btn-primary" onclick="doLogin()">Connexion</button>
+        <button class="btn btn-secondary" type="button" onclick="closeLogin()">Annuler</button>
+        <button class="btn btn-primary" type="button" onclick="doLogin()">Connexion</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal Hôpital -->
+  <!-- Modale hôpital -->
   <div id="hospitalModal" class="modal hidden">
     <div class="modal-panel">
       <div class="modal-header">
         <h2 id="hospitalModalTitle">Ajouter un hôpital</h2>
-        <button class="modal-close" onclick="closeModal('hospitalModal')">&times;</button>
+        <button class="modal-close" type="button" onclick="closeModal('hospitalModal')" aria-label="Fermer"><i class="ph ph-x"></i></button>
       </div>
       <form id="hospitalForm" onsubmit="saveHospital(event)">
         <input type="hidden" id="hId">
-        <div class="form-group"><label>Nom *</label><input type="text" id="hName" required></div>
-        <div class="form-group"><label>Adresse *</label><input type="text" id="hAddress" required></div>
-        <div class="form-group"><label>Téléphone</label><input type="text" id="hPhone"></div>
+        <div class="form-group"><label for="hName">Nom</label><input type="text" id="hName" required></div>
+        <div class="form-group"><label for="hAddress">Adresse</label><input type="text" id="hAddress" required></div>
+        <div class="form-group"><label for="hPhone">Téléphone</label><input type="tel" id="hPhone"></div>
         <div class="form-row">
-          <div class="form-group"><label>Latitude</label><input type="number" step="any" id="hLat"></div>
-          <div class="form-group"><label>Longitude</label><input type="number" step="any" id="hLng"></div>
+          <div class="form-group"><label for="hLat">Latitude</label><input type="number" step="any" id="hLat"></div>
+          <div class="form-group"><label for="hLng">Longitude</label><input type="number" step="any" id="hLng"></div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('hospitalModal')">Annuler</button>
@@ -345,21 +370,23 @@
     </div>
   </div>
 
-  <!-- Modal Service -->
+  <!-- Modale service -->
   <div id="serviceModal" class="modal hidden">
     <div class="modal-panel">
       <div class="modal-header">
         <h2 id="serviceModalTitle">Ajouter un service</h2>
-        <button class="modal-close" onclick="closeModal('serviceModal')">&times;</button>
+        <button class="modal-close" type="button" onclick="closeModal('serviceModal')" aria-label="Fermer"><i class="ph ph-x"></i></button>
       </div>
       <form id="serviceForm" onsubmit="saveService(event)">
         <input type="hidden" id="sId"><input type="hidden" id="sHospitalId">
-        <div class="form-group"><label>Nom du service *</label><input type="text" id="sName" required></div>
-        <div class="form-group"><label>Bâtiment / Site *</label><input type="text" id="sBuilding" required></div>
-        <div class="form-group"><label>Étage</label><input type="text" id="sFloor" placeholder="ex: 3e étage"></div>
-        <div class="form-group"><label>Code porte</label><input type="text" id="sDoorCodes"></div>
-        <div class="form-group"><label>Description</label><textarea id="sDescription" rows="2"></textarea></div>
-        <div class="form-group"><label>Téléphone</label><input type="text" id="sPhone"></div>
+        <div class="form-group"><label for="sName">Nom du service</label><input type="text" id="sName" required></div>
+        <div class="form-group"><label for="sBuilding">Bâtiment ou site</label><input type="text" id="sBuilding" required></div>
+        <div class="form-row">
+          <div class="form-group"><label for="sFloor">Étage</label><input type="text" id="sFloor" placeholder="3e étage"></div>
+          <div class="form-group"><label for="sDoorCodes">Code porte</label><input type="text" id="sDoorCodes"></div>
+        </div>
+        <div class="form-group"><label for="sDescription">Description</label><textarea id="sDescription" rows="2"></textarea></div>
+        <div class="form-group"><label for="sPhone">Téléphone</label><input type="tel" id="sPhone"></div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('serviceModal')">Annuler</button>
           <button type="submit" class="btn btn-primary">Enregistrer</button>
@@ -368,18 +395,18 @@
     </div>
   </div>
 
-  <!-- Modal Protocole -->
+  <!-- Modale protocole -->
   <div id="protocolModal" class="modal hidden">
     <div class="modal-panel">
       <div class="modal-header">
         <h2 id="protocolModalTitle">Ajouter un protocole</h2>
-        <button class="modal-close" onclick="closeModal('protocolModal')">&times;</button>
+        <button class="modal-close" type="button" onclick="closeModal('protocolModal')" aria-label="Fermer"><i class="ph ph-x"></i></button>
       </div>
       <form id="protocolForm" onsubmit="saveProtocol(event)">
         <input type="hidden" id="pId">
-        <div class="form-group"><label>Nom *</label><input type="text" id="pName" required></div>
-        <div class="form-group"><label>Icône (emoji)</label><input type="text" id="pIcon" placeholder="ex: 🧠"></div>
-        <div class="form-group"><label>URL *</label><input type="url" id="pUrl" required placeholder="https://..."></div>
+        <div class="form-group"><label for="pName">Nom</label><input type="text" id="pName" required></div>
+        <div class="form-group"><label for="pIcon">Icône (emoji, facultatif)</label><input type="text" id="pIcon"></div>
+        <div class="form-group"><label for="pUrl">Lien</label><input type="text" id="pUrl" required placeholder="https://... ou /pdf/..."></div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('protocolModal')">Annuler</button>
           <button type="submit" class="btn btn-primary">Enregistrer</button>

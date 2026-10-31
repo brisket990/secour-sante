@@ -1,25 +1,23 @@
 /* Onglet Check-list (repris de brisket990/checklist-smur), adapté aux couleurs RéaDirect.
    Une colonne étroite : relevés d'abord, sections repliables, barre d'envoi collante en bas. */
-.cl { --cl-vis: #d8e600; --cl-warn-bg: #fdecea; }
-body.dark .cl { --cl-warn-bg: #3a1b1d; }
+.cl { --cl-warn-bg: var(--red-soft); }
 .cl [hidden] { display: none !important; }
 
-.cl-wrap { max-width: 560px; display: flex; flex-direction: column; gap: 14px; }
+.cl-wrap { max-width: 600px; display: flex; flex-direction: column; gap: 14px; }
+.cl-stack { display: flex; flex-direction: column; gap: 14px; }
 .cl-head { display: flex; flex-direction: column; gap: 4px; }
-.cl-tag { align-self: flex-start; font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-  background: var(--cl-vis); color: #14213a; padding: 5px 8px; border-radius: 3px; }
-.cl-head h2 { font-size: 1.4rem; font-weight: 700; color: var(--primary); margin-top: 4px; }
-body.dark .cl-head h2 { color: var(--text); }
-.cl-head p { color: var(--text-muted); font-size: 0.85rem; }
+.cl-tag { align-self: flex-start; font-size: 0.75rem; font-weight: 700; background: var(--hivis); color: #0f1a2e; padding: 3px 10px; border-radius: var(--radius-pill); }
+.cl-head h2 { font-size: 1.5rem; font-weight: 700; margin-top: 4px; }
+.cl-head p { color: var(--text-muted); font-size: 0.9rem; }
 
 .cl-menu { display: flex; flex-direction: column; gap: 14px; }
 .cl-pick { display: flex; flex-direction: column; gap: 4px; text-align: left; width: 100%; cursor: pointer; font: inherit;
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; color: var(--text); box-shadow: var(--shadow); }
-.cl-pick b { font-size: 1.6rem; line-height: 1.1; }
+.cl-pick b { font-size: 1.5rem; line-height: 1.1; }
 .cl-pick span { color: var(--text-muted); font-size: 0.9rem; }
 .cl-pick:hover, .cl-pick:active { border-color: var(--accent); }
 .cl-pick[disabled] { opacity: .5; cursor: default; }
-.cl-back { align-self: flex-start; background: none; border: 0; color: var(--accent); font: inherit; font-weight: 600; padding: 4px 0; cursor: pointer; }
+.cl-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; color: var(--accent); font: inherit; font-weight: 600; padding: 4px 0; cursor: pointer; }
 
 .cl-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
 .cl h3 { font-size: 1.05rem; font-weight: 700; }
@@ -63,4 +61,7 @@ body.dark .cl-head h2 { color: var(--text); }
 .cl-go[aria-disabled=true] { opacity: .45; cursor: default; }
 .cl-bar p { font-size: 0.8rem; color: var(--text-muted); text-align: center; }
 .cl-bar p.miss { color: var(--red); }
+@media (max-width: 768px) {
+  .cl-bar { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); padding-bottom: 12px; border-radius: var(--radius); }
+}
 @media (prefers-reduced-motion: reduce) { .cl-chev { transition: none; } }

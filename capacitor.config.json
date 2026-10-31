@@ -1,6 +1,6 @@
 {
   "appId": "com.secoursante.app",
-  "appName": "RéaDirect",
+  "appName": "SMUR Beaujon",
   "webDir": "public",
   "server": {
     "url": "https://readirect.xothiques.duckdns.org",

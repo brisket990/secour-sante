@@ -50,10 +50,9 @@ function toggleSidebar() {
 
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .tab-item').forEach(n => n.classList.toggle('active', n.dataset.view === name));
   document.getElementById(`view-${name}`).classList.add('active');
-  const idx = ['inbox','candidatures','users','hospitals','grandegarde','checklist','recherche','contact','profile','infos'].indexOf(name);
-  document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
+  window.scrollTo(0, 0);
   if (name === 'hospitals') loadHospitals();
   if (name === 'inbox') loadInbox();
   if (name === 'candidatures') loadCandidatures();
@@ -69,7 +68,11 @@ function showView(name) {
 }
 
 // ===== DARK MODE =====
-if (localStorage.getItem('dark') === 'true') document.body.classList.add('dark');
+// Sans choix enregistré, on suit le réglage du téléphone
+const savedDark = localStorage.getItem('dark');
+if (savedDark === 'true' || (savedDark === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  document.body.classList.add('dark');
+}
 function toggleDarkMode() {
   document.body.classList.toggle('dark');
   localStorage.setItem('dark', document.body.classList.contains('dark'));
@@ -77,8 +80,8 @@ function toggleDarkMode() {
 }
 function updateDarkUI() {
   const dark = document.body.classList.contains('dark');
-  document.getElementById('darkIcon').textContent = dark ? '☀️' : '🌙';
-  document.getElementById('darkText').textContent = dark ? 'Light mode' : 'Dark mode';
+  document.getElementById('darkIcon').className = `ph ${dark ? 'ph-sun' : 'ph-moon'} nav-icon`;
+  document.getElementById('darkText').textContent = dark ? 'Mode clair' : 'Mode sombre';
 }
 updateDarkUI();
 
@@ -193,7 +196,7 @@ async function doRegister(e) {
     nom: document.getElementById('regNom').value,
     prenom: document.getElementById('regPrenom').value,
     email: document.getElementById('regEmail').value,
-    smur: document.getElementById('regSmur').value,
+    aph: document.getElementById('regAph').value.trim(),
     password: document.getElementById('regPassword').value,
   };
   try {
@@ -210,33 +213,20 @@ async function doRegister(e) {
 function updateAdminUI() {
   const admin = isAdmin();
   const loggedIn = !!authToken;
-  document.getElementById('adminText').textContent = admin ? 'Admin ✓' : 'Admin';
+  document.getElementById('adminText').textContent = admin ? 'Se déconnecter (admin)' : 'Admin';
   document.getElementById('adminToggle').classList.toggle('active', admin);
   document.getElementById('adminToggle').classList.toggle('hidden', !admin && loggedIn);
   document.getElementById('adminBadge').classList.toggle('hidden', !admin);
   document.getElementById('addBtn').style.display = admin ? '' : 'none';
   document.getElementById('addProtocolBtn').style.display = admin ? '' : 'none';
-  document.getElementById('navInbox').classList.toggle('hidden', !admin);
-  document.getElementById('navCandidatures').classList.toggle('hidden', !admin);
-  document.getElementById('navUsers').classList.toggle('hidden', !admin);
+  document.getElementById('navAdminGroup').classList.toggle('hidden', !admin);
   if (admin) { loadInboxCount(); loadCandidaturesCount(); }
-
-  const beaujon = isBeaujonUser();
-  document.getElementById('navChecklist').classList.toggle('hidden', !beaujon);
   document.getElementById('navProfile').classList.toggle('hidden', admin || !userInfo);
-  if (!beaujon && document.getElementById('view-checklist').classList.contains('active')) showView('hospitals');
 
-  // User info button in sidebar footer
-  const ui = document.getElementById('userInfo');
-  const un = document.getElementById('userInfoName');
-  if (authToken && !admin && userInfo) {
-    ui.classList.remove('hidden');
-    ui.style.display = 'flex';
-    un.textContent = `${userInfo.prenom} ${userInfo.nom}`;
-  } else {
-    ui.classList.add('hidden');
-    ui.style.display = 'none';
-  }
+  // Bouton de déconnexion avec le nom de l'utilisateur
+  const showUser = authToken && !admin && userInfo;
+  document.getElementById('userInfo').classList.toggle('hidden', !showUser);
+  if (showUser) document.getElementById('userInfoName').textContent = `${userInfo.prenom} ${userInfo.nom}`;
 }
 
 // ===== HOSPITALS (accent-insensitive) =====
@@ -258,11 +248,13 @@ function renderHospitalList(search) {
   const container = document.getElementById('hospitalList');
   if (!filtered.length) { container.innerHTML = '<div class="empty-state">Aucun résultat</div>'; return; }
   container.innerHTML = filtered.map(h => `
-    <div class="hospital-card ${selectedId === h.id ? 'active' : ''}" onclick="selectHospital(${h.id})">
-      <h3>${esc(h.name)}</h3>
-      <div class="addr">${esc(h.address)}</div>
-      ${h.phone ? `<div class="phone">📞 ${esc(h.phone)}</div>` : ''}
-    </div>
+    <button type="button" class="hospital-card ${selectedId === h.id ? 'active' : ''}" onclick="selectHospital(${h.id})">
+      <span class="hospital-card-text">
+        <h3>${esc(h.name)}</h3>
+        <span class="addr">${esc(h.address)}</span>
+      </span>
+      <i class="ph ph-caret-right chevron"></i>
+    </button>
   `).join('');
 }
 
@@ -295,44 +287,47 @@ async function selectHospital(id) {
   }
   let svcHTML = '';
   for (const [site, svcs] of Object.entries(groups)) {
-    svcHTML += `<div class="site-group"><div class="section-title">${esc(site)}</div>`;
+    svcHTML += `<section class="site-group"><h3 class="section-title"><i class="ph ph-buildings"></i> ${esc(site)}</h3>`;
     svcHTML += svcs.map(s => `
-      <div class="service-card">
+      <article class="service-card">
         <div class="service-info">
-          <h4>${esc(s.name)} ${s.floor ? `<span class="badge-floor">${esc(s.floor)}</span>` : ''}</h4>
-          ${s.description ? `<p>${esc(s.description)}</p>` : ''}
-          ${s.door_codes ? `<p>🔑 ${esc(s.door_codes)}</p>` : ''}
-          ${s.phone ? `<p>${telLink(s.phone)}</p>` : ''}
+          <h4>${esc(s.name)}</h4>
+          ${s.description ? `<p class="service-desc">${esc(s.description)}</p>` : ''}
+          <div class="service-facts">
+            ${s.floor ? `<span class="fact"><i class="ph ph-stairs"></i> ${esc(s.floor)}</span>` : ''}
+            ${s.door_codes ? `<span class="fact fact-code"><i class="ph ph-key"></i> ${esc(s.door_codes)}</span>` : ''}
+            ${s.phone ? telLink(s.phone, 'fact') : ''}
+          </div>
         </div>
         ${admin ? `<div class="service-actions">
-          <button onclick="showServiceModal(${h.id},${s.id})">✏️</button>
-          <button onclick="deleteService(${s.id})">🗑️</button>
+          <button type="button" class="icon-btn" onclick="showServiceModal(${h.id},${s.id})" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button>
+          <button type="button" class="icon-btn danger" onclick="deleteService(${s.id})" aria-label="Supprimer"><i class="ph ph-trash"></i></button>
         </div>` : ''}
-      </div>
+      </article>
     `).join('');
-    svcHTML += '</div>';
+    svcHTML += '</section>';
   }
   const gps = (h.lat && h.lng) ? `
     <div class="detail-gps">
-      <button class="btn btn-success btn-sm" onclick="openExternal('https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=driving')">📍 Google</button>
-      <button class="btn btn-outline btn-sm" onclick="openExternal('https://waze.com/ul?ll=${h.lat},${h.lng}&navigate=yes')">🗺️ Waze</button>
+      <button type="button" class="btn btn-primary" onclick="openGps('google', ${h.lat}, ${h.lng})"><i class="ph ph-google-logo"></i> Google Maps</button>
+      <button type="button" class="btn btn-secondary" onclick="openGps('waze', ${h.lat}, ${h.lng})"><i class="ph ph-navigation-arrow"></i> Waze</button>
     </div>` : '';
   document.getElementById('hospitalDetail').innerHTML = `
-    <button class="mobile-back" onclick="backToList()">← Retour</button>
+    <button type="button" class="mobile-back" onclick="backToList()"><i class="ph ph-caret-left"></i> Hôpitaux</button>
     <div class="detail-header">
       <h2>${esc(h.name)}</h2>
       <div class="detail-info">
-        <div class="info-line"><span class="label">Adresse:</span> ${esc(h.address)}</div>
-        <div class="info-line"><span class="label">Contact:</span> ${h.phone ? telLink(h.phone) : 'Non renseigné'}</div>
+        <div class="info-line"><i class="ph ph-map-pin"></i> ${esc(h.address)}</div>
+        ${h.phone ? `<div class="info-line">${telLink(h.phone)}</div>` : ''}
       </div>
       ${gps}
       ${admin ? `<div class="detail-admin">
-        <button class="btn btn-primary btn-sm" onclick="showHospitalModal(${h.id})">✏️ Modifier</button>
-        <button class="btn btn-danger btn-sm" onclick="if(confirm('Supprimer cet hôpital ?')) deleteHospital(${h.id})">🗑️ Supprimer</button>
-        <button class="btn btn-primary btn-sm" onclick="showServiceModal(${h.id})">+ Service</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showHospitalModal(${h.id})"><i class="ph ph-pencil-simple"></i> Modifier</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showServiceModal(${h.id})"><i class="ph ph-plus"></i> Service</button>
+        <button type="button" class="btn btn-danger btn-sm" onclick="if(confirm('Supprimer cet hôpital ?')) deleteHospital(${h.id})"><i class="ph ph-trash"></i> Supprimer</button>
       </div>` : ''}
     </div>
-    <div class="services-section">${h.services.length === 0 ? '<div class="empty-state">Aucun service</div>' : svcHTML}</div>`;
+    <div class="services-section">${h.services.length === 0 ? '<div class="empty-state">Aucun service enregistré pour cet hôpital.</div>' : svcHTML}</div>`;
   renderHospitalList('');
 }
 
@@ -357,15 +352,19 @@ function quickSearch() {
     // Also search via API for service-level matches (sends raw input for server-side accent-insensitive search)
     if (results.length === 0) {
       api(`/api/hospitals?search=${encodeURIComponent(raw)}`).then(hs => {
-        container.innerHTML = hs.length === 0 ? '<div class="empty-state">Aucun résultat</div>'
-          : hs.map(h => `<div class="result-card" onclick="selectHospital(${h.id})"><h4>${esc(h.name)}</h4><p>${esc(h.address)}</p></div>`).join('');
+        container.innerHTML = hs.length === 0 ? '<div class="empty-state">Aucun résultat. Essayez un autre mot.</div>'
+          : hs.map(resultCard).join('');
       });
     } else {
-      container.innerHTML = results.map(h =>
-        `<div class="result-card" onclick="selectHospital(${h.id})"><h4>${esc(h.name)}</h4><p>${esc(h.address)}</p></div>`
-      ).join('');
+      container.innerHTML = results.map(resultCard).join('');
     }
   }, 200);
+}
+
+function resultCard(h) {
+  return `<button type="button" class="result-card" onclick="selectHospital(${h.id})">
+    <span><h4>${esc(h.name)}</h4><p>${esc(h.address)}</p></span><i class="ph ph-caret-right chevron"></i>
+  </button>`;
 }
 
 // ===== CONTACT =====
@@ -420,7 +419,7 @@ async function loadInbox() {
       <div class="inbox-meta"><span>${esc(m.name)} (${esc(m.email)})</span><span>${m.created_at}</span></div>
       <div class="inbox-body">${esc(m.message)}</div>
       <div class="inbox-actions">
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();if(confirm('Supprimer ?')) deleteMessage(${m.id})">🗑️</button>
+        <button type="button" class="icon-btn danger" aria-label="Supprimer" onclick="event.stopPropagation();if(confirm('Supprimer ?')) deleteMessage(${m.id})"><i class="ph ph-trash"></i></button>
       </div>
     </div>`).join('');
   loadInboxCount();
@@ -446,12 +445,12 @@ async function loadCandidatures() {
   container.innerHTML = users.map(u => `
     <div class="inbox-item">
       <h4>${esc(u.prenom)} ${esc(u.nom)}</h4>
-      <div class="inbox-meta"><span>${esc(u.email)}</span><span>${esc(u.smur)}</span></div>
+      <div class="inbox-meta"><span>${esc(u.email)}</span>${u.aph ? `<span>APH ${esc(u.aph)}</span>` : ''}</div>
       <div class="inbox-meta"><span>Inscrit le ${u.created_at}</span></div>
       <div class="inbox-actions">
-        <button class="btn btn-sm btn-success" onclick="approveUser(${u.id})">✅ Valider</button>
-        <button class="btn btn-sm btn-danger" onclick="if(confirm('Refuser cette candidature ?')) rejectUser(${u.id})">❌ Refuser</button>
-        <button class="btn btn-sm btn-outline" onclick="if(confirm('Promouvoir ${esc(u.prenom)} ${esc(u.nom)} en administrateur ?')) promoteUser(${u.id})">👑 Admin</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="approveUser(${u.id})"><i class="ph ph-check"></i> Valider</button>
+        <button type="button" class="btn btn-sm btn-danger" onclick="if(confirm('Refuser cette candidature ?')) rejectUser(${u.id})"><i class="ph ph-x"></i> Refuser</button>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="if(confirm('Promouvoir ${esc(u.prenom)} ${esc(u.nom)} en administrateur ?')) promoteUser(${u.id})"><i class="ph ph-crown"></i> Admin</button>
       </div>
     </div>
   `).join('');
@@ -490,8 +489,8 @@ async function loadUsers() {
   if (!users.length) { container.innerHTML = '<div class="empty-state">Aucun utilisateur</div>'; return; }
   container.innerHTML = users.map(u => `
     <div class="inbox-item">
-      <h4>${esc(u.prenom)} ${esc(u.nom)} ${u.role === 'admin' ? '👑' : ''}</h4>
-      <div class="inbox-meta"><span>${esc(u.email)}</span><span>${esc(u.smur)}</span></div>
+      <h4>${esc(u.prenom)} ${esc(u.nom)} ${u.role === 'admin' ? '<i class="ph ph-crown" title="Admin"></i>' : ''}</h4>
+      <div class="inbox-meta"><span>${esc(u.email)}</span>${u.aph ? `<span>APH ${esc(u.aph)}</span>` : ''}</div>
       <div class="inbox-meta">
         <span>Inscrit le ${u.created_at}</span>
         <span class="badge-status ${u.status}">${u.status}</span>
@@ -501,7 +500,7 @@ async function loadUsers() {
           <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
           <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
         </select>
-        <button class="btn btn-sm btn-danger" onclick="if(confirm('Supprimer définitivement ${esc(u.prenom)} ${esc(u.nom)} ?')) deleteUser(${u.id})">🗑️ Supprimer</button>
+        <button type="button" class="btn btn-sm btn-danger" onclick="if(confirm('Supprimer définitivement ${esc(u.prenom)} ${esc(u.nom)} ?')) deleteUser(${u.id})"><i class="ph ph-trash"></i> Supprimer</button>
       </div>
     </div>
   `).join('');
@@ -563,7 +562,7 @@ async function deleteHospital(id) {
   await api(`/api/hospitals/${id}`, { method: 'DELETE' });
   selectedId = null;
   backToList();
-  document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><div class="empty-icon">🏥</div><h3>Sélectionnez un hôpital</h3></div>`;
+  document.getElementById('hospitalDetail').innerHTML = `<div class="empty-detail"><i class="ph ph-hospital empty-icon"></i><h3>Sélectionnez un hôpital</h3></div>`;
   loadHospitals();
 }
 
@@ -631,11 +630,28 @@ function openExternal(url) {
   else window.open(url, '_blank', 'noopener');
 }
 
-// ===== CHECK-LIST (SMUR Beaujon) =====
-function isBeaujonUser() {
-  return !isAdmin() && !!userInfo && normalize(userInfo.smur).includes('beaujon');
+// GPS : sur le téléphone, on ouvre directement l'application choisie via son
+// schéma (Capacitor transmet ces liens à Android). Si l'appli n'est pas installée,
+// la page reste visible : on retombe alors sur le lien web au bout d'un instant.
+function openGps(app, lat, lng) {
+  const web = app === 'waze'
+    ? `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
+    : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  if (!isNativeApp()) return openExternal(web);
+  const native = app === 'waze'
+    ? `waze://?ll=${lat},${lng}&navigate=yes`
+    : `google.navigation:q=${lat},${lng}&mode=d`;
+  let left = false;
+  const onHide = () => { if (document.hidden) left = true; };
+  document.addEventListener('visibilitychange', onHide);
+  window.location.href = native;
+  setTimeout(() => {
+    document.removeEventListener('visibilitychange', onHide);
+    if (!left) openExternal(web);
+  }, 1500);
 }
 
+// ===== CHECK-LIST =====
 async function loadChecklist() {
   try {
     const p = await api('/api/profile');
@@ -650,7 +666,6 @@ async function loadProfile() {
   document.getElementById('profNom').value = p.nom || '';
   document.getElementById('profPrenom').value = p.prenom || '';
   document.getElementById('profEmail').value = p.email || '';
-  document.getElementById('profSmur').value = p.smur || '';
   document.getElementById('profAph').value = p.aph || '';
 }
 
@@ -666,10 +681,10 @@ async function saveProfile(e) {
 
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
-function telLink(phone) {
+function telLink(phone, cls = 'tel-link') {
   if (!phone) return '';
   const clean = phone.replace(/[\s\.\-\(\)]/g, '');
-  return `<a href="tel:${clean}" style="color:inherit;text-decoration:none">📞 ${esc(phone)}</a>`;
+  return `<a class="${cls}" href="tel:${clean}"><i class="ph ph-phone"></i> ${esc(phone)}</a>`;
 }
 
 document.addEventListener('click', e => {
@@ -717,16 +732,17 @@ async function loadProtocols() {
   allProtocols = await api('/api/protocols');
   const container = document.getElementById('protocolList');
   const admin = isAdmin();
+  if (!allProtocols.length) { container.innerHTML = '<div class="empty-state">Aucun protocole pour le moment.</div>'; return; }
   container.innerHTML = allProtocols.map(p => `
-    <div class="gg-link-wrapper" style="position:relative">
+    <div class="gg-link-wrapper">
       <a class="gg-link" href="${esc(p.url)}" target="_blank" rel="noopener">
-        <span class="gg-icon">${p.icon || '📄'}</span>
+        <span class="gg-icon">${p.icon ? esc(p.icon) : '<i class="ph ph-file-pdf"></i>'}</span>
         <span class="gg-title">${esc(p.name)}</span>
-        <span class="gg-arrow">→</span>
+        <i class="ph ph-arrow-right gg-arrow"></i>
       </a>
-      ${admin ? `<div style="position:absolute;top:4px;right:4px;display:flex;gap:4px">
-        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();editProtocol(${p.id})">✏️</button>
-        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();if(confirm('Supprimer ce protocole ?')) deleteProtocol(${p.id})">🗑️</button>
+      ${admin ? `<div class="gg-admin">
+        <button type="button" class="icon-btn" aria-label="Modifier" onclick="editProtocol(${p.id})"><i class="ph ph-pencil-simple"></i></button>
+        <button type="button" class="icon-btn danger" aria-label="Supprimer" onclick="if(confirm('Supprimer ce protocole ?')) deleteProtocol(${p.id})"><i class="ph ph-trash"></i></button>
       </div>` : ''}
     </div>
   `).join('');

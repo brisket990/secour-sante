@@ -39,7 +39,7 @@ const SECTIONS_UMH=[
   s(2012960360,"Éclairage",FC),
   g("Ventilation",FCD,[[1826347904,"Climatisation additionnelle"],[1576730776,"Chauffage additionnel"],[2084919961,"Aérateur"],[804554268,"Extracteur"]]),
   g("Sièges et ceintures",FCD,[[1664608336,"Rotation des sièges"],[1645612026,"Assises"],[1366709664,"Ceintures"]]),
-  g("Réfrigérateur",FCD,[[1597973623,"Ouverture / fermeture"],[331375373,"Température (2–8 °C)"]]),
+  g("Réfrigérateur",FCD,[[1597973623,"Ouverture / fermeture"],[331375373,"Température (2-8 °C)"]]),
   g("Placards et tiroirs",FCD,[[293629216,"Tiroirs"],[1775711898,"Placards"],[1135315575,"Sangles maintien matériel"]]),
   g("Dispositifs médicaux",FCD,[[1741786643,"Mise en charge"],[314749919,"Fixation"]]),
   g("Immobilisation",ON,[[218827186,"MID"],[1057130220,"Colliers cervicaux"],[1506183739,"Attelles"]])]},

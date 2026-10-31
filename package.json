@@ -1,7 +1,7 @@
 {
   "name": "secour-sante",
   "version": "1.0.0",
-  "description": "Annuaire des services hospitaliers pour ambulances de réanimation",
+  "description": "SMUR Beaujon - Annuaire et Aide pour Ambulancier SMUR",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

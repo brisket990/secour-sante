@@ -81,24 +81,35 @@ app.post('/api/login', async (req, res) => {
   res.json({ token, role: user.role, user: { nom: user.nom, prenom: user.prenom, email: user.email, smur: user.smur } });
 });
 
+// L'application n'est distribuée qu'au SMUR Beaujon : la colonne smur (NOT NULL)
+// reçoit cette valeur par défaut quand le formulaire ne la demande plus.
+const DEFAULT_SMUR = 'SMUR Beaujon';
+
+function validAph(aph) {
+  return aph.length <= 20 && /^[0-9A-Za-z]*$/.test(aph);
+}
+
 app.post('/api/register', async (req, res) => {
-  const { nom, prenom, email, smur, password } = req.body;
-  if (!nom || !prenom || !email || !smur || !password) return res.status(400).json({ error: 'Tous les champs sont requis' });
+  const { nom, prenom, email, password } = req.body;
+  const smur = req.body.smur || DEFAULT_SMUR;
+  const aph = String(req.body.aph ?? '').trim();
+  if (!nom || !prenom || !email || !aph || !password) return res.status(400).json({ error: 'Tous les champs sont requis' });
+  if (!validAph(aph)) return res.status(400).json({ error: 'Numéro APH invalide (lettres et chiffres, 20 caractères max)' });
   if (!email.endsWith('@aphp.fr') && !email.endsWith('@ghu-paris.fr')) return res.status(400).json({ error: 'Email @aphp.fr requis' });
   const existing = await get('SELECT id FROM users WHERE email = ?', [email]);
   if (existing) return res.status(400).json({ error: 'Cet email est déjà enregistré' });
   const hashed = hashPw(password);
-  const result = await run('INSERT INTO users (nom, prenom, email, smur, password) VALUES (?, ?, ?, ?, ?)',
-    [nom, prenom, email, smur, hashed]);
+  const result = await run('INSERT INTO users (nom, prenom, email, smur, password, aph) VALUES (?, ?, ?, ?, ?, ?)',
+    [nom, prenom, email, smur, hashed, aph]);
   res.status(201).json({ message: 'Compte créé, en attente de validation par un administrateur' });
 });
 
 app.get('/api/pending-users', requireAuth, async (req, res) => {
-  res.json(await all("SELECT id, nom, prenom, email, smur, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC"));
+  res.json(await all("SELECT id, nom, prenom, email, aph, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC"));
 });
 
 app.get('/api/users', requireAuth, async (req, res) => {
-  res.json(await all("SELECT id, nom, prenom, email, smur, role, status, created_at FROM users ORDER BY created_at DESC"));
+  res.json(await all("SELECT id, nom, prenom, email, aph, role, status, created_at FROM users ORDER BY created_at DESC"));
 });
 
 app.put('/api/users/:id/status', requireAuth, async (req, res) => {
@@ -169,7 +180,7 @@ app.get('/api/profile', async (req, res) => {
 app.put('/api/profile', async (req, res) => {
   if (!req.auth.email) return res.status(404).json({ error: 'Aucun profil pour ce compte' });
   const aph = String(req.body.aph ?? '').trim();
-  if (aph.length > 20 || !/^[0-9A-Za-z]*$/.test(aph)) {
+  if (!validAph(aph)) {
     return res.status(400).json({ error: 'Numéro APH invalide (lettres et chiffres, 20 caractères max)' });
   }
   await run('UPDATE users SET aph = ? WHERE email = ?', [aph, req.auth.email]);
@@ -293,9 +304,9 @@ app.post('/api/contact', async (req, res) => {
   );
   if (transporter) {
     transporter.sendMail({
-      from: `"Formulaire RéaDirect" <${process.env.SMTP_USER || 'noreply@readirect.app'}>`,
+      from: `"Formulaire SMUR Beaujon" <${process.env.SMTP_USER || 'noreply@readirect.app'}>`,
       to: MAIL_TO,
-      subject: `[RéaDirect] ${subject || 'Nouveau message de ' + name}`,
+      subject: `[SMUR Beaujon] ${subject || 'Nouveau message de ' + name}`,
       text: `De: ${name} (${email})\nSujet: ${subject}\n\n${message}`,
     }).catch(() => {});
   }
@@ -336,7 +347,7 @@ console.log('DB mode:', process.env.TURSO_DATABASE_URL ? 'Turso' : 'Local sql.js
 
 initialize().then(() => {
   app.listen(PORT, () => {
-    console.log(`RéaDirect démarré sur http://localhost:${PORT}`);
+    console.log(`SMUR Beaujon démarré sur http://localhost:${PORT}`);
   });
 }).catch(err => {
   console.error('Erreur d\'initialisation:', err);
