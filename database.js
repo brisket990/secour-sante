@@ -44,9 +44,19 @@ async function _queryTurso(sql, params = []) {
   return { lastInsertRowid: Number(result.lastInsertRowid), changes: result.rowsAffected };
 }
 
+// Colonnes ajoutees apres coup : ADD COLUMN uniquement, jamais de reecriture des
+// lignes existantes. Chaque colonne n'est ajoutee que si elle manque.
+const COLUMNS = [
+  { table: 'users', name: 'aph', sql: "ALTER TABLE users ADD COLUMN aph TEXT DEFAULT ''" },
+];
+
 async function _createTablesTurso() {
   for (const sql of TABLES) {
     await _db.execute(sql);
+  }
+  for (const col of COLUMNS) {
+    const info = await _db.execute(`PRAGMA table_info(${col.table})`);
+    if (!info.rows.some(r => r.name === col.name)) await _db.execute(col.sql);
   }
 }
 
@@ -215,6 +225,11 @@ async function initialize(forceLocal) {
     _db = fs.existsSync(dbPath) ? new SQL.Database(fs.readFileSync(dbPath)) : new SQL.Database();
     _mode = 'local';
     for (const sql of TABLES) { _db.run(sql); }
+    for (const col of COLUMNS) {
+      const info = _db.exec(`PRAGMA table_info(${col.table})`);
+      const names = info[0] ? info[0].values.map(r => r[1]) : [];
+      if (!names.includes(col.name)) _db.run(col.sql);
+    }
     _localSave();
     _localSeed();
   }

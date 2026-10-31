@@ -158,6 +158,24 @@ app.get('/api/health', (req, res) => {
 // Protect all /api/ routes below (user must be logged in)
 app.use('/api', requireAnyAuth);
 
+// Profil de l'utilisateur connecte (le compte admin par mot de passe n'en a pas)
+app.get('/api/profile', async (req, res) => {
+  if (!req.auth.email) return res.status(404).json({ error: 'Aucun profil pour ce compte' });
+  const user = await get('SELECT nom, prenom, email, smur, aph FROM users WHERE email = ?', [req.auth.email]);
+  if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  res.json(user);
+});
+
+app.put('/api/profile', async (req, res) => {
+  if (!req.auth.email) return res.status(404).json({ error: 'Aucun profil pour ce compte' });
+  const aph = String(req.body.aph ?? '').trim();
+  if (aph.length > 20 || !/^[0-9A-Za-z]*$/.test(aph)) {
+    return res.status(400).json({ error: 'Numéro APH invalide (lettres et chiffres, 20 caractères max)' });
+  }
+  await run('UPDATE users SET aph = ? WHERE email = ?', [aph, req.auth.email]);
+  res.json({ success: true, aph });
+});
+
 app.get('/api/hospitals', requireAnyAuth, async (req, res) => {
   let { search } = req.query;
   let hospitals;

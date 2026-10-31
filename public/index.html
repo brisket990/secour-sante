@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RéaDirect - Annuaire Réanimation</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/checklist.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -83,11 +84,17 @@
       <a class="nav-item" href="#" onclick="return showView('grandegarde')">
         <span class="nav-icon">🛡️</span><span>Grande garde</span>
       </a>
+      <a id="navChecklist" class="nav-item hidden" href="#" onclick="return showView('checklist')">
+        <span class="nav-icon">✅</span><span>Check-list</span>
+      </a>
       <a class="nav-item" href="#" onclick="return showView('recherche')">
         <span class="nav-icon">🔍</span><span>Recherche rapide</span>
       </a>
       <a class="nav-item" href="#" onclick="return showView('contact')">
         <span class="nav-icon">✉️</span><span>Contact</span>
+      </a>
+      <a id="navProfile" class="nav-item hidden" href="#" onclick="return showView('profile')">
+        <span class="nav-icon">🪪</span><span>Mon profil</span>
       </a>
       <a class="nav-item" href="#" onclick="return showView('infos')">
         <span class="nav-icon">ℹ️</span><span>À propos</span>
@@ -229,6 +236,61 @@
         </div>
       </div>
 
+      <!-- Vue Check-list (SMUR Beaujon uniquement) -->
+      <div id="view-checklist" class="view cl">
+        <div class="cl-wrap" id="cl-menu">
+          <div class="cl-head">
+            <span class="cl-tag">SMUR Beaujon · prise de poste</span>
+            <h2>Quelle check-list ?</h2>
+            <p>Choisis le véhicule. La saisie ouvre ensuite le formulaire pré-rempli dans le navigateur.</p>
+          </div>
+          <div class="cl-menu" id="cl-picks"></div>
+        </div>
+        <div class="cl-wrap" id="cl-app" hidden>
+          <button class="cl-back" id="cl-backBtn" type="button">‹ Changer de check-list</button>
+          <div class="cl-head">
+            <span class="cl-tag" id="cl-tag"></span>
+            <h2 id="cl-title"></h2>
+            <p>Saisis les relevés, signale les écarts. Tout le reste est coché conforme. Le bouton ouvre le formulaire pré-rempli : il ne reste qu'à faire Suivant jusqu'à Envoyer.</p>
+          </div>
+          <section class="cl-card"><h3>Relevés du jour</h3><div id="cl-quickFields" style="display:flex;flex-direction:column;gap:14px"></div></section>
+          <div id="cl-sections" style="display:flex;flex-direction:column;gap:14px"></div>
+          <section class="cl-card">
+            <h3>Clôture</h3>
+            <div class="cl-field" id="cl-obs-field"><label for="cl-obs">Observations diverses <small>(facultatif)</small></label><textarea id="cl-obs"></textarea></div>
+            <div class="cl-item" id="cl-nc-item"><span class="cl-lbl">Non-conformité empêchant la mise en service ?</span><div class="cl-chips" id="cl-nc"></div></div>
+            <div class="cl-hint" id="cl-nc-hint" hidden>Prévenir le cadre ou l'encadrant d'astreinte immédiatement.</div>
+            <button class="cl-reset" id="cl-reset" type="button">Tout remettre à conforme</button>
+          </section>
+          <div class="cl-bar">
+            <a class="cl-go" id="cl-go" href="#" aria-disabled="true">Ouvrir le formulaire pré-rempli</a>
+            <p id="cl-msg"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vue Profil (utilisateurs) -->
+      <div id="view-profile" class="view">
+        <div class="view-header">
+          <h2>🪪 Mon profil</h2>
+          <p>Vos informations de compte</p>
+        </div>
+        <div class="about-card" style="max-width:600px">
+          <form id="profileForm" onsubmit="saveProfile(event)">
+            <div class="form-row">
+              <div class="form-group"><label>Nom</label><input type="text" id="profNom" disabled></div>
+              <div class="form-group"><label>Prénom</label><input type="text" id="profPrenom" disabled></div>
+            </div>
+            <div class="form-group"><label>Email</label><input type="text" id="profEmail" disabled></div>
+            <div class="form-group"><label>SMUR</label><input type="text" id="profSmur" disabled></div>
+            <div class="form-group"><label>Numéro APH</label><input type="text" id="profAph" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="ex: 1234567"></div>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.85rem">Sert à pré-remplir la check-list de prise de poste.</p>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Enregistrer</button></div>
+            <div id="profileSuccess" class="contact-success hidden">✅ Profil enregistré.</div>
+          </form>
+        </div>
+      </div>
+
       <!-- Vue Infos -->
       <div id="view-infos" class="view">
         <div class="view-header"><h2>À propos</h2></div>
@@ -329,5 +391,6 @@
   </div>
 
   <script src="js/app.js"></script>
+  <script src="js/checklist.js"></script>
 </body>
 </html>

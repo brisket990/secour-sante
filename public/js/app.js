@@ -52,13 +52,15 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
-  const idx = ['inbox','candidatures','users','hospitals','grandegarde','recherche','contact','infos'].indexOf(name);
+  const idx = ['inbox','candidatures','users','hospitals','grandegarde','checklist','recherche','contact','profile','infos'].indexOf(name);
   document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
   if (name === 'hospitals') loadHospitals();
   if (name === 'inbox') loadInbox();
   if (name === 'candidatures') loadCandidatures();
   if (name === 'users') loadUsers();
   if (name === 'grandegarde') loadProtocols();
+  if (name === 'checklist') loadChecklist();
+  if (name === 'profile') loadProfile();
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('open');
@@ -219,6 +221,11 @@ function updateAdminUI() {
   document.getElementById('navUsers').classList.toggle('hidden', !admin);
   if (admin) { loadInboxCount(); loadCandidaturesCount(); }
 
+  const beaujon = isBeaujonUser();
+  document.getElementById('navChecklist').classList.toggle('hidden', !beaujon);
+  document.getElementById('navProfile').classList.toggle('hidden', admin || !userInfo);
+  if (!beaujon && document.getElementById('view-checklist').classList.contains('active')) showView('hospitals');
+
   // User info button in sidebar footer
   const ui = document.getElementById('userInfo');
   const un = document.getElementById('userInfoName');
@@ -307,8 +314,8 @@ async function selectHospital(id) {
   }
   const gps = (h.lat && h.lng) ? `
     <div class="detail-gps">
-      <button class="btn btn-success btn-sm" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=driving','_blank')">📍 Google</button>
-      <button class="btn btn-outline btn-sm" onclick="window.open('https://waze.com/ul?ll=${h.lat},${h.lng}&navigate=yes','_blank')">🗺️ Waze</button>
+      <button class="btn btn-success btn-sm" onclick="openExternal('https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=driving')">📍 Google</button>
+      <button class="btn btn-outline btn-sm" onclick="openExternal('https://waze.com/ul?ll=${h.lat},${h.lng}&navigate=yes')">🗺️ Waze</button>
     </div>` : '';
   document.getElementById('hospitalDetail').innerHTML = `
     <button class="mobile-back" onclick="backToList()">← Retour</button>
@@ -610,6 +617,51 @@ async function deleteService(id) {
   const hId = selectedId;
   await api(`/api/services/${id}`, { method: 'DELETE' });
   if (hId) selectHospital(hId);
+}
+
+// Dans l'appli Android (WebView Capacitor), un window.open peut s'afficher dans la
+// WebView elle-même. Une navigation de premier niveau vers un autre domaine est en
+// revanche interceptée par Capacitor et confiée au navigateur du téléphone.
+function isNativeApp() {
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+    || /; wv\)/.test(navigator.userAgent);
+}
+function openExternal(url) {
+  if (isNativeApp()) window.location.href = url;
+  else window.open(url, '_blank', 'noopener');
+}
+
+// ===== CHECK-LIST (SMUR Beaujon) =====
+function isBeaujonUser() {
+  return !isAdmin() && !!userInfo && normalize(userInfo.smur).includes('beaujon');
+}
+
+async function loadChecklist() {
+  try {
+    const p = await api('/api/profile');
+    window.Checklist?.setAph(p.aph);
+  } catch {}
+}
+
+// ===== PROFIL =====
+async function loadProfile() {
+  document.getElementById('profileSuccess').classList.add('hidden');
+  const p = await api('/api/profile');
+  document.getElementById('profNom').value = p.nom || '';
+  document.getElementById('profPrenom').value = p.prenom || '';
+  document.getElementById('profEmail').value = p.email || '';
+  document.getElementById('profSmur').value = p.smur || '';
+  document.getElementById('profAph').value = p.aph || '';
+}
+
+async function saveProfile(e) {
+  e.preventDefault();
+  try {
+    await api('/api/profile', { method: 'PUT', body: JSON.stringify({ aph: document.getElementById('profAph').value }) });
+    document.getElementById('profileSuccess').classList.remove('hidden');
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+  }
 }
 
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
