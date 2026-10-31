@@ -11,3 +11,8 @@ android/local.properties
 android/.idea/
 *.apk
 *.aab
+
+# Clé de signature Android (jamais dans le dépôt)
+android/keystore.properties
+*.jks
+*.keystore
