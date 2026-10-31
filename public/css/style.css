@@ -431,6 +431,8 @@ a.fact i { color: inherit; }
     color: var(--text-muted); text-decoration: none; font-size: 0.7rem; font-weight: 500;
   }
   .tab-item i { font-size: 1.45rem; transition: transform 0.2s var(--ease); }
+  /* Libellés sur une ligne ; « Grande garde » se réduit un peu sur les écrans très étroits */
+  .tab-item span { white-space: nowrap; font-size: clamp(0.62rem, 2.9vw, 0.7rem); }
   .tab-item.active { color: var(--accent); font-weight: 600; }
   .tab-item.active i { transform: translateY(-1px); }
   .tab-item:active i { transform: scale(0.92); }
