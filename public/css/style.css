@@ -182,7 +182,7 @@ h1, h2, h3, h4 { line-height: 1.25; letter-spacing: -0.01em; }
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
-.topbar-title { display: none; align-items: center; gap: 10px; font-weight: 700; }
+.topbar-title { display: none; align-items: center; gap: 10px; font-weight: 700; white-space: nowrap; min-width: 0; overflow: hidden; }
 .topbar-title img { width: 28px; height: 28px; }
 .hamburger { display: none; border: 0; background: transparent; font-size: 1.4rem; width: 40px; height: 40px; border-radius: var(--radius-sm); cursor: pointer; place-items: center; }
 .hamburger:hover { background: var(--hover-bg); }
@@ -613,3 +613,15 @@ body.dark .sheet-option.vac i:first-child { color: #6fd6a0; }
 .geo-map-foot a { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; }
 .geo-pin { background: none; border: 0; }
 .geo-pin i { font-size: 36px; color: #c42b2b; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); }
+
+/* À propos : installer l'application */
+.install { margin-top: 16px; display: flex; flex-direction: column; gap: 18px; }
+.install h3 { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; order: -2; }
+.install-os { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+.install-os h4 { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+.install-os p { color: var(--text-muted); font-size: 0.9rem; }
+.install-os .btn { align-self: flex-start; }
+.install-steps { padding-left: 1.3rem; display: flex; flex-direction: column; gap: 6px; font-size: 0.92rem; }
+.install-steps i { font-size: 1.1rem; vertical-align: -2px; color: var(--accent); }
+.install-note { font-size: 0.85rem !important; }
+.install-os.first { order: -1; }
