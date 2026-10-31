@@ -5,12 +5,12 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const { initialize, get, all, run, reseed } = require('./database');
+const { registerPlanningRoutes } = require('./planning');
 
 BigInt.prototype.toJSON = function() { return Number(this); };
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const JWT_SECRET = process.env.JWT_SECRET || 'readirect-secret-change-in-prod';
 
 // Envoi d'e-mail optionnel : actif seulement si SMTP_HOST/USER/PASS sont definis.
@@ -26,25 +26,40 @@ const transporter = (process.env.SMTP_HOST && process.env.SMTP_USER && process.e
     })
   : null;
 
-function signToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+function signToken(payload, expiresIn = '7d') {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
-function verifyToken(token) {
-  try { return jwt.verify(token, JWT_SECRET); } catch { return null; }
+// Un jeton à usage limité (ex. lien de téléchargement) porte un `scope` : il n'est
+// accepté que là où ce scope est demandé, jamais comme jeton de connexion.
+function verifyToken(token, scope) {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded.scope === scope ? decoded : null;
+  } catch { return null; }
 }
 
-function requireAuth(req, res, next) {
+// Jeton de session : toujours lié à un compte (email). Les anciens jetons de
+// l'accès admin par mot de passe seul, sans email, ne sont plus acceptés.
+function sessionToken(req) {
   const decoded = verifyToken(req.headers.authorization?.replace('Bearer ', ''));
-  if (!decoded || decoded.role !== 'admin') {
+  return decoded && decoded.email ? decoded : null;
+}
+
+// Admin = compte dont le rôle est « admin » en base, relu à chaque requête :
+// une nomination ou un retrait prend effet sans avoir à se reconnecter.
+async function requireAuth(req, res, next) {
+  const decoded = sessionToken(req);
+  const user = decoded && await get('SELECT role, status FROM users WHERE email = ?', [decoded.email]);
+  if (!user || user.role !== 'admin' || user.status !== 'approved') {
     return res.status(401).json({ error: 'Non autorisé' });
   }
-  req.auth = decoded;
+  req.auth = { ...decoded, role: 'admin' };
   next();
 }
 
 function requireAnyAuth(req, res, next) {
-  const decoded = verifyToken(req.headers.authorization?.replace('Bearer ', ''));
+  const decoded = sessionToken(req);
   if (!decoded) return res.status(401).json({ error: 'Connectez-vous' });
   req.auth = decoded;
   next();
@@ -65,14 +80,9 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/login', async (req, res) => {
-  const { password } = req.body;
-  if (password === ADMIN_PASSWORD) {
-    const token = signToken({ role: 'admin' });
-    return res.json({ token, role: 'admin' });
-  }
-  // Sans email c'est une tentative admin au mauvais mot de passe : ne pas
-  // interroger la base avec un email undefined (rejete par Turso).
-  if (!req.body.email) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
+  // Connexion uniquement par compte (email + mot de passe). Ne pas interroger
+  // la base avec un email undefined (rejeté par Turso).
+  if (!req.body.email || !req.body.password) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
   const user = await get('SELECT * FROM users WHERE email = ?', [req.body.email]);
   if (!user) return res.status(403).json({ error: 'Email ou mot de passe incorrect' });
   if (user.status !== 'approved') return res.status(403).json({ error: 'Compte en attente de validation' });
@@ -81,24 +91,35 @@ app.post('/api/login', async (req, res) => {
   res.json({ token, role: user.role, user: { nom: user.nom, prenom: user.prenom, email: user.email, smur: user.smur } });
 });
 
+// L'application n'est distribuée qu'au SMUR Beaujon : la colonne smur (NOT NULL)
+// reçoit cette valeur par défaut quand le formulaire ne la demande plus.
+const DEFAULT_SMUR = 'SMUR Beaujon';
+
+function validAph(aph) {
+  return aph.length <= 20 && /^[0-9A-Za-z]*$/.test(aph);
+}
+
 app.post('/api/register', async (req, res) => {
-  const { nom, prenom, email, smur, password } = req.body;
-  if (!nom || !prenom || !email || !smur || !password) return res.status(400).json({ error: 'Tous les champs sont requis' });
+  const { nom, prenom, email, password } = req.body;
+  const smur = req.body.smur || DEFAULT_SMUR;
+  const aph = String(req.body.aph ?? '').trim();
+  if (!nom || !prenom || !email || !aph || !password) return res.status(400).json({ error: 'Tous les champs sont requis' });
+  if (!validAph(aph)) return res.status(400).json({ error: 'Numéro APH invalide (lettres et chiffres, 20 caractères max)' });
   if (!email.endsWith('@aphp.fr') && !email.endsWith('@ghu-paris.fr')) return res.status(400).json({ error: 'Email @aphp.fr requis' });
   const existing = await get('SELECT id FROM users WHERE email = ?', [email]);
   if (existing) return res.status(400).json({ error: 'Cet email est déjà enregistré' });
   const hashed = hashPw(password);
-  const result = await run('INSERT INTO users (nom, prenom, email, smur, password) VALUES (?, ?, ?, ?, ?)',
-    [nom, prenom, email, smur, hashed]);
+  const result = await run('INSERT INTO users (nom, prenom, email, smur, password, aph) VALUES (?, ?, ?, ?, ?, ?)',
+    [nom, prenom, email, smur, hashed, aph]);
   res.status(201).json({ message: 'Compte créé, en attente de validation par un administrateur' });
 });
 
 app.get('/api/pending-users', requireAuth, async (req, res) => {
-  res.json(await all("SELECT id, nom, prenom, email, smur, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC"));
+  res.json(await all("SELECT id, nom, prenom, email, aph, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC"));
 });
 
 app.get('/api/users', requireAuth, async (req, res) => {
-  res.json(await all("SELECT id, nom, prenom, email, smur, role, status, created_at FROM users ORDER BY created_at DESC"));
+  res.json(await all("SELECT id, nom, prenom, email, aph, role, status, hidden_menus, planner, created_at FROM users ORDER BY created_at DESC"));
 });
 
 app.put('/api/users/:id/status', requireAuth, async (req, res) => {
@@ -130,20 +151,23 @@ app.put('/api/users/:id/promote', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/users/:id/reject', requireAuth, async (req, res) => {
+  await run('DELETE FROM desiderata WHERE user_id = ?', [req.params.id]);
   await run('DELETE FROM users WHERE id = ?', [req.params.id]);
   res.json({ success: true });
 });
 
 app.delete('/api/users/:id', requireAuth, async (req, res) => {
+  await run('DELETE FROM desiderata WHERE user_id = ?', [req.params.id]);
   await run('DELETE FROM users WHERE id = ?', [req.params.id]);
   res.json({ success: true });
 });
 
-app.get('/api/me', (req, res) => {
-  const decoded = verifyToken(req.headers.authorization?.replace('Bearer ', ''));
+app.get('/api/me', async (req, res) => {
+  const decoded = sessionToken(req);
   if (!decoded) return res.json({ authed: false });
-  if (decoded.role === 'admin') return res.json({ authed: true, role: 'admin' });
-  res.json({ authed: true, role: decoded.role, user: decoded });
+  const user = await get('SELECT nom, prenom, email, smur, role, status FROM users WHERE email = ?', [decoded.email]);
+  if (!user || user.status !== 'approved') return res.json({ authed: false });
+  res.json({ authed: true, role: user.role, user: { nom: user.nom, prenom: user.prenom, email: user.email, smur: user.smur } });
 });
 
 app.post('/api/logout', (req, res) => {
@@ -157,6 +181,26 @@ app.get('/api/health', (req, res) => {
 
 // Protect all /api/ routes below (user must be logged in)
 app.use('/api', requireAnyAuth);
+
+// Profil de l'utilisateur connecte (le compte admin par mot de passe n'en a pas)
+app.get('/api/profile', async (req, res) => {
+  if (!req.auth.email) return res.status(404).json({ error: 'Aucun profil pour ce compte' });
+  const user = await get('SELECT nom, prenom, email, smur, aph, hidden_menus, planner FROM users WHERE email = ?', [req.auth.email]);
+  if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  res.json(user);
+});
+
+app.put('/api/profile', async (req, res) => {
+  if (!req.auth.email) return res.status(404).json({ error: 'Aucun profil pour ce compte' });
+  const aph = String(req.body.aph ?? '').trim();
+  if (!validAph(aph)) {
+    return res.status(400).json({ error: 'Numéro APH invalide (lettres et chiffres, 20 caractères max)' });
+  }
+  await run('UPDATE users SET aph = ? WHERE email = ?', [aph, req.auth.email]);
+  res.json({ success: true, aph });
+});
+
+registerPlanningRoutes(app, { get, all, run, requireAuth, signToken, verifyToken });
 
 app.get('/api/hospitals', requireAnyAuth, async (req, res) => {
   let { search } = req.query;
@@ -275,9 +319,9 @@ app.post('/api/contact', async (req, res) => {
   );
   if (transporter) {
     transporter.sendMail({
-      from: `"Formulaire RéaDirect" <${process.env.SMTP_USER || 'noreply@readirect.app'}>`,
+      from: `"Formulaire SMUR Beaujon" <${process.env.SMTP_USER || 'noreply@readirect.app'}>`,
       to: MAIL_TO,
-      subject: `[RéaDirect] ${subject || 'Nouveau message de ' + name}`,
+      subject: `[SMUR Beaujon] ${subject || 'Nouveau message de ' + name}`,
       text: `De: ${name} (${email})\nSujet: ${subject}\n\n${message}`,
     }).catch(() => {});
   }
@@ -318,7 +362,7 @@ console.log('DB mode:', process.env.TURSO_DATABASE_URL ? 'Turso' : 'Local sql.js
 
 initialize().then(() => {
   app.listen(PORT, () => {
-    console.log(`RéaDirect démarré sur http://localhost:${PORT}`);
+    console.log(`SMUR Beaujon démarré sur http://localhost:${PORT}`);
   });
 }).catch(err => {
   console.error('Erreur d\'initialisation:', err);
