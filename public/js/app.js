@@ -531,6 +531,8 @@ async function deleteUser(id) {
 function showHospitalModal(id) {
   document.getElementById('hospitalModalTitle').textContent = id ? 'Modifier' : 'Ajouter un hôpital';
   document.getElementById('hId').value = id || '';
+  document.getElementById('hSearch').value = '';
+  document.getElementById('hResults').innerHTML = '';
   if (id) {
     api(`/api/hospitals/${id}`).then(h => {
       document.getElementById('hName').value = h.name;
@@ -538,9 +540,109 @@ function showHospitalModal(id) {
       document.getElementById('hPhone').value = h.phone;
       document.getElementById('hLat').value = h.lat;
       document.getElementById('hLng').value = h.lng;
+      initHospitalMap();
     });
-  } else { ['hName','hAddress','hPhone','hLat','hLng'].forEach(id => document.getElementById(id).value = ''); }
+  } else {
+    ['hName','hAddress','hPhone','hLat','hLng'].forEach(id => document.getElementById(id).value = '');
+    initHospitalMap();
+  }
   document.getElementById('hospitalModal').classList.remove('hidden');
+}
+
+// ===== CARTE ET RECHERCHE DE LIEU (fiche hôpital) =====
+// Leaflet + fonds OpenStreetMap, chargés seulement à l'ouverture de la fiche.
+const SMUR_BEAUJON = [48.9082, 2.3104];
+let hMap = null, hMarker = null, leafletLoading = null;
+
+function loadLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (leafletLoading) return leafletLoading;
+  leafletLoading = new Promise((resolve, reject) => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    js.onload = resolve;
+    js.onerror = () => { leafletLoading = null; reject(new Error('Carte indisponible')); };
+    document.head.appendChild(js);
+  });
+  return leafletLoading;
+}
+
+function hCoords() {
+  const lat = parseFloat(document.getElementById('hLat').value);
+  const lng = parseFloat(document.getElementById('hLng').value);
+  return (lat && lng) ? [lat, lng] : null;
+}
+
+function setHospitalCoords(lat, lng) {
+  document.getElementById('hLat').value = lat.toFixed(6);
+  document.getElementById('hLng').value = lng.toFixed(6);
+  hMarker.setLatLng([lat, lng]);
+}
+
+async function initHospitalMap() {
+  try { await loadLeaflet(); } catch { document.getElementById('hMap').textContent = 'Carte indisponible (pas de connexion ?).'; return; }
+  const at = hCoords();
+  if (!hMap) {
+    hMap = L.map('hMap', { zoomControl: true, attributionControl: true });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap',
+    }).addTo(hMap);
+    const pin = L.divIcon({ className: 'geo-pin', html: '<i class="ph ph-map-pin"></i>', iconSize: [36, 36], iconAnchor: [18, 34] });
+    hMarker = L.marker(SMUR_BEAUJON, { draggable: true, icon: pin }).addTo(hMap);
+    hMarker.on('dragend', () => { const p = hMarker.getLatLng(); setHospitalCoords(p.lat, p.lng); });
+    hMap.on('click', e => setHospitalCoords(e.latlng.lat, e.latlng.lng));
+  }
+  hMarker.setLatLng(at || SMUR_BEAUJON);
+  hMarker.setOpacity(at ? 1 : 0.45);
+  // La fenêtre vient d'apparaître : Leaflet doit remesurer la carte
+  setTimeout(() => { hMap.invalidateSize(); hMap.setView(at || SMUR_BEAUJON, at ? 17 : 13); }, 60);
+}
+
+function syncMarkerFromInputs() {
+  const at = hCoords();
+  if (at && hMarker) { hMarker.setLatLng(at).setOpacity(1); hMap.panTo(at); }
+}
+
+let geoTimer, geoResults = [];
+function geoSearch() {
+  clearTimeout(geoTimer);
+  const q = document.getElementById('hSearch').value.trim();
+  const box = document.getElementById('hResults');
+  if (q.length < 3) { box.innerHTML = ''; return; }
+  geoTimer = setTimeout(async () => {
+    box.innerHTML = '<div class="geo-status">Recherche…</div>';
+    try {
+      geoResults = await api(`/api/geocode?q=${encodeURIComponent(q)}`);
+      box.innerHTML = geoResults.length === 0
+        ? '<div class="geo-status">Aucun lieu trouvé. Essayez avec la ville.</div>'
+        : geoResults.map((p, i) => `<button type="button" class="geo-result" role="option" onclick="pickPlace(${i})">
+            <i class="ph ph-map-pin"></i><span><strong>${esc(p.name || p.address)}</strong><small>${esc(p.name ? p.address : p.detail)}</small></span>
+          </button>`).join('');
+    } catch (err) {
+      box.innerHTML = `<div class="geo-status">${esc(err.message)}</div>`;
+    }
+  }, 450);
+}
+
+function pickPlace(i) {
+  const p = geoResults[i];
+  const name = document.getElementById('hName');
+  if (!name.value.trim() && p.name) name.value = p.name;
+  document.getElementById('hAddress').value = p.address;
+  setHospitalCoords(p.lat, p.lng);
+  hMarker.setOpacity(1);
+  hMap.setView([p.lat, p.lng], 17);
+  document.getElementById('hResults').innerHTML = '';
+}
+
+function checkInGoogleMaps() {
+  const at = hCoords();
+  if (!at) { alert('Placez d\'abord le repère sur la carte.'); return; }
+  openExternal(`https://www.google.com/maps/search/?api=1&query=${at[0]},${at[1]}`);
 }
 
 async function saveHospital(e) {

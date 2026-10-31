@@ -589,3 +589,27 @@ body.dark .sheet-option.vac i:first-child { color: #6fd6a0; }
   box-shadow: var(--shadow-md); text-align: center;
 }
 @media (max-width: 768px) { .toast { bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom)); } }
+
+/* Fiche hôpital : recherche de lieu et carte */
+.geo-input { position: relative; }
+.geo-input i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem; pointer-events: none; }
+.geo-input input { padding-left: 38px !important; }
+.geo-results { display: flex; flex-direction: column; gap: 4px; }
+.geo-results:empty { display: none; }
+.geo-result {
+  display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card); cursor: pointer;
+}
+.geo-result:hover { border-color: var(--accent); background: var(--accent-soft); }
+.geo-result i { color: var(--accent); font-size: 1.15rem; margin-top: 1px; flex-shrink: 0; }
+.geo-result span { display: flex; flex-direction: column; min-width: 0; }
+.geo-result strong { font-weight: 600; font-size: 0.92rem; }
+.geo-result small { color: var(--text-muted); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; }
+.geo-status { font-size: 0.85rem; color: var(--text-muted); padding: 6px 2px; }
+.geo-map-wrap { margin-bottom: 14px; }
+.geo-map { height: 220px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); overflow: hidden; background: var(--card-sunken); color: var(--text-muted); font-size: 0.85rem; }
+.geo-map-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-top: 6px; }
+.geo-map-foot a { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+.geo-pin { background: none; border: 0; }
+.geo-pin i { font-size: 36px; color: #c42b2b; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); }
