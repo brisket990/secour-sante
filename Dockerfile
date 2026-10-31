@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-COPY server.js database.js ./
+COPY server.js database.js planning.js ./
 COPY public ./public
 
 # Point de montage si un jour on repasse en SQLite local (DB_PATH)

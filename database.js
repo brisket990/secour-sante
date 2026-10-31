@@ -13,6 +13,8 @@ const TABLES = [
   `CREATE TABLE IF NOT EXISTS protocols (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, icon TEXT DEFAULT '', url TEXT DEFAULT '', sort_order INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, hospital_id INTEGER NOT NULL, name TEXT NOT NULL, floor TEXT DEFAULT '', building TEXT DEFAULT '', door_codes TEXT DEFAULT '', description TEXT DEFAULT '', phone TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE CASCADE)`,
   `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT NOT NULL, prenom TEXT NOT NULL, email TEXT NOT NULL UNIQUE, smur TEXT NOT NULL, password TEXT NOT NULL, role TEXT DEFAULT 'user', status TEXT DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS desiderata (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, day TEXT NOT NULL, type TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, day))`,
+  `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
 ];
 
 function query(sql, params = []) {
@@ -48,6 +50,10 @@ async function _queryTurso(sql, params = []) {
 // lignes existantes. Chaque colonne n'est ajoutee que si elle manque.
 const COLUMNS = [
   { table: 'users', name: 'aph', sql: "ALTER TABLE users ADD COLUMN aph TEXT DEFAULT ''" },
+  // Menus masqués pour cet utilisateur, séparés par des virgules (ex. "checklist,desiderata")
+  { table: 'users', name: 'hidden_menus', sql: "ALTER TABLE users ADD COLUMN hidden_menus TEXT DEFAULT ''" },
+  // 1 = peut consulter et exporter le planning des desiderata
+  { table: 'users', name: 'planner', sql: "ALTER TABLE users ADD COLUMN planner INTEGER DEFAULT 0" },
 ];
 
 async function _createTablesTurso() {

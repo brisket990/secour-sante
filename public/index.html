@@ -99,6 +99,12 @@
       <a id="navChecklist" class="nav-item" href="#" data-view="checklist" onclick="return showView('checklist')">
         <i class="ph ph-clipboard-text nav-icon"></i><span>Check-list</span>
       </a>
+      <a class="nav-item" href="#" data-view="desiderata" onclick="return showView('desiderata')">
+        <i class="ph ph-calendar-check nav-icon"></i><span>Desiderata</span>
+      </a>
+      <a id="navPlanning" class="nav-item hidden" href="#" data-view="planning" onclick="return showView('planning')">
+        <i class="ph ph-table nav-icon"></i><span>Planning</span>
+      </a>
       <a class="nav-item" href="#" data-view="grandegarde" onclick="return showView('grandegarde')">
         <i class="ph ph-first-aid-kit nav-icon"></i><span>Grande garde</span>
       </a>
@@ -283,6 +289,70 @@
         </div>
       </div>
 
+      <!-- Desiderata (agent) -->
+      <div id="view-desiderata" class="view">
+        <div class="view-header">
+          <h2>Desiderata</h2>
+          <p id="deRules">Touchez un jour pour le demander en OFF.</p>
+        </div>
+        <div class="de-wrap">
+          <div class="seg" id="deMonths" role="tablist" aria-label="Mois"></div>
+          <div class="surface de-cal">
+            <div class="de-cal-head">
+              <h3 id="deMonthTitle"></h3>
+              <span class="de-count" id="deCount"></span>
+            </div>
+            <div class="de-weekdays" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+            <div class="de-grid" id="deGrid"></div>
+            <div class="de-legend" id="deLegend"></div>
+          </div>
+          <div class="empty-state hidden" id="deEmpty"></div>
+        </div>
+      </div>
+
+      <!-- Planning (admin et planificateur) -->
+      <div id="view-planning" class="view">
+        <div class="view-header">
+          <h2>Planning</h2>
+          <p>Jours OFF souhaités par les agents</p>
+        </div>
+        <div class="pl-toolbar">
+          <div class="pl-month">
+            <button type="button" class="icon-btn" onclick="planningShift(-1)" aria-label="Mois précédent"><i class="ph ph-caret-left"></i></button>
+            <strong id="plMonthLabel"></strong>
+            <button type="button" class="icon-btn" onclick="planningShift(1)" aria-label="Mois suivant"><i class="ph ph-caret-right"></i></button>
+          </div>
+          <div class="pl-actions">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="exportPlanning('xlsx')"><i class="ph ph-file-xls"></i> Excel</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="exportPlanning('pdf')"><i class="ph ph-file-pdf"></i> PDF</button>
+          </div>
+        </div>
+        <div class="pl-table-wrap" id="plTable"></div>
+
+        <section id="plSettings" class="surface narrow pl-settings hidden">
+          <h3><i class="ph ph-sliders-horizontal"></i> Règles des desiderata</h3>
+          <form id="plSettingsForm" onsubmit="savePlanningSettings(event)">
+            <div class="form-row">
+              <div class="form-group"><label for="setOpenFrom">Premier mois ouvert</label><input type="number" id="setOpenFrom" min="0" max="12" required><small class="form-help">Nombre de mois après le mois en cours (2 = dans deux mois).</small></div>
+              <div class="form-group"><label for="setOpenTo">Dernier mois ouvert</label><input type="number" id="setOpenTo" min="0" max="12" required></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label for="setMaxMonth">Jours OFF par mois, au maximum</label><input type="number" id="setMaxMonth" min="1" max="31" required></div>
+              <div class="form-group"><label for="setMaxRun">Jours OFF à la suite, au maximum</label><input type="number" id="setMaxRun" min="1" max="31" required></div>
+            </div>
+            <fieldset class="form-group checks">
+              <legend>Types de OFF proposés</legend>
+              <label><input type="checkbox" name="setTypes" value="jour"> Jour</label>
+              <label><input type="checkbox" name="setTypes" value="nuit"> Nuit</label>
+              <label><input type="checkbox" name="setTypes" value="both"> Jour et nuit</label>
+            </fieldset>
+            <p class="auth-error hidden" id="plSettingsError"></p>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Enregistrer les règles</button></div>
+            <div id="plSettingsSuccess" class="contact-success hidden"><i class="ph ph-check-circle"></i> Règles enregistrées.</div>
+          </form>
+        </section>
+      </div>
+
       <!-- Profil -->
       <div id="view-profile" class="view">
         <div class="view-header">
@@ -327,8 +397,8 @@
   <!-- Barre d'onglets (mobile) -->
   <nav class="tabbar" aria-label="Navigation principale">
     <a href="#" class="tab-item active" data-view="hospitals" onclick="return showView('hospitals')"><i class="ph ph-hospital"></i><span>Hôpitaux</span></a>
-    <a href="#" class="tab-item" data-view="recherche" onclick="return showView('recherche')"><i class="ph ph-magnifying-glass"></i><span>Recherche</span></a>
     <a href="#" class="tab-item" data-view="checklist" onclick="return showView('checklist')"><i class="ph ph-clipboard-text"></i><span>Check-list</span></a>
+    <a href="#" class="tab-item" data-view="desiderata" onclick="return showView('desiderata')"><i class="ph ph-calendar-check"></i><span>Desiderata</span></a>
     <a href="#" class="tab-item" data-view="grandegarde" onclick="return showView('grandegarde')"><i class="ph ph-first-aid-kit"></i><span>Garde</span></a>
     <a href="#" class="tab-item" onclick="toggleSidebar();return false"><i class="ph ph-list"></i><span>Plus</span></a>
   </nav>
@@ -343,6 +413,18 @@
         <button class="btn btn-secondary" type="button" onclick="closeLogin()">Annuler</button>
         <button class="btn btn-primary" type="button" onclick="doLogin()">Connexion</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Choix du type de OFF pour un jour -->
+  <div id="daySheet" class="modal sheet hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="daySheetTitle"></h2>
+        <button class="modal-close" type="button" onclick="closeModal('daySheet')" aria-label="Fermer"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="sheet-options" id="daySheetOptions"></div>
+      <p class="auth-error hidden" id="daySheetError"></p>
     </div>
   </div>
 
@@ -419,5 +501,6 @@
 
   <script src="js/app.js"></script>
   <script src="js/checklist.js"></script>
+  <script src="js/desiderata.js"></script>
 </body>
 </html>

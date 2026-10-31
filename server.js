@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const { initialize, get, all, run, reseed } = require('./database');
+const { registerPlanningRoutes } = require('./planning');
 
 BigInt.prototype.toJSON = function() { return Number(this); };
 
@@ -26,12 +27,17 @@ const transporter = (process.env.SMTP_HOST && process.env.SMTP_USER && process.e
     })
   : null;
 
-function signToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+function signToken(payload, expiresIn = '7d') {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
-function verifyToken(token) {
-  try { return jwt.verify(token, JWT_SECRET); } catch { return null; }
+// Un jeton à usage limité (ex. lien de téléchargement) porte un `scope` : il n'est
+// accepté que là où ce scope est demandé, jamais comme jeton de connexion.
+function verifyToken(token, scope) {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded.scope === scope ? decoded : null;
+  } catch { return null; }
 }
 
 function requireAuth(req, res, next) {
@@ -109,7 +115,7 @@ app.get('/api/pending-users', requireAuth, async (req, res) => {
 });
 
 app.get('/api/users', requireAuth, async (req, res) => {
-  res.json(await all("SELECT id, nom, prenom, email, aph, role, status, created_at FROM users ORDER BY created_at DESC"));
+  res.json(await all("SELECT id, nom, prenom, email, aph, role, status, hidden_menus, planner, created_at FROM users ORDER BY created_at DESC"));
 });
 
 app.put('/api/users/:id/status', requireAuth, async (req, res) => {
@@ -141,11 +147,13 @@ app.put('/api/users/:id/promote', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/users/:id/reject', requireAuth, async (req, res) => {
+  await run('DELETE FROM desiderata WHERE user_id = ?', [req.params.id]);
   await run('DELETE FROM users WHERE id = ?', [req.params.id]);
   res.json({ success: true });
 });
 
 app.delete('/api/users/:id', requireAuth, async (req, res) => {
+  await run('DELETE FROM desiderata WHERE user_id = ?', [req.params.id]);
   await run('DELETE FROM users WHERE id = ?', [req.params.id]);
   res.json({ success: true });
 });
@@ -172,7 +180,7 @@ app.use('/api', requireAnyAuth);
 // Profil de l'utilisateur connecte (le compte admin par mot de passe n'en a pas)
 app.get('/api/profile', async (req, res) => {
   if (!req.auth.email) return res.status(404).json({ error: 'Aucun profil pour ce compte' });
-  const user = await get('SELECT nom, prenom, email, smur, aph FROM users WHERE email = ?', [req.auth.email]);
+  const user = await get('SELECT nom, prenom, email, smur, aph, hidden_menus, planner FROM users WHERE email = ?', [req.auth.email]);
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
   res.json(user);
 });
@@ -186,6 +194,8 @@ app.put('/api/profile', async (req, res) => {
   await run('UPDATE users SET aph = ? WHERE email = ?', [aph, req.auth.email]);
   res.json({ success: true, aph });
 });
+
+registerPlanningRoutes(app, { get, all, run, requireAuth, signToken, verifyToken });
 
 app.get('/api/hospitals', requireAnyAuth, async (req, res) => {
   let { search } = req.query;

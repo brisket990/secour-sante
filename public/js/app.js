@@ -60,6 +60,8 @@ function showView(name) {
   if (name === 'grandegarde') loadProtocols();
   if (name === 'checklist') loadChecklist();
   if (name === 'profile') loadProfile();
+  if (name === 'desiderata') loadDesiderata();
+  if (name === 'planning') loadPlanning();
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('open');
@@ -227,6 +229,38 @@ function updateAdminUI() {
   const showUser = authToken && !admin && userInfo;
   document.getElementById('userInfo').classList.toggle('hidden', !showUser);
   if (showUser) document.getElementById('userInfoName').textContent = `${userInfo.prenom} ${userInfo.nom}`;
+  if (loggedIn) refreshAccess();
+}
+
+// ===== ACCÈS PAR UTILISATEUR =====
+// Menus que l'admin peut masquer pour un utilisateur (clés = data-view)
+const ACCESS_MENUS = [
+  ['hospitals', 'Hôpitaux'], ['recherche', 'Recherche rapide'], ['checklist', 'Check-list'],
+  ['grandegarde', 'Grande garde'], ['desiderata', 'Desiderata'], ['contact', 'Proposer une modification'],
+];
+let userAccess = { hidden: [], planner: false };
+
+async function refreshAccess() {
+  if (isAdmin()) {
+    // Le compte admin (mot de passe seul) n'a pas de profil, donc pas de desiderata
+    userAccess = { hidden: ['desiderata'], planner: true };
+  } else {
+    try {
+      const p = await api('/api/profile');
+      userAccess = { hidden: String(p.hidden_menus || '').split(',').filter(Boolean), planner: Number(p.planner) === 1 };
+    } catch { userAccess = { hidden: [], planner: false }; }
+  }
+  document.querySelectorAll('.nav-item[data-view], .tab-item[data-view]').forEach(el => {
+    if (ACCESS_MENUS.some(([k]) => k === el.dataset.view)) el.classList.toggle('hidden', userAccess.hidden.includes(el.dataset.view));
+  });
+  document.getElementById('navPlanning').classList.toggle('hidden', !userAccess.planner);
+  // Si la vue affichée vient d'être masquée, on bascule sur le premier menu visible
+  const active = document.querySelector('.view.active')?.id.replace('view-', '');
+  const blocked = userAccess.hidden.includes(active) || (active === 'planning' && !userAccess.planner);
+  if (blocked) {
+    const first = document.querySelector('.sidebar-nav .nav-item[data-view]:not(.hidden)');
+    if (first) showView(first.dataset.view);
+  }
 }
 
 // ===== HOSPITALS (accent-insensitive) =====
@@ -493,7 +527,7 @@ async function loadUsers() {
       <div class="inbox-meta"><span>${esc(u.email)}</span>${u.aph ? `<span>APH ${esc(u.aph)}</span>` : ''}</div>
       <div class="inbox-meta">
         <span>Inscrit le ${u.created_at}</span>
-        <span class="badge-status ${u.status}">${u.status}</span>
+        <span class="badge-status ${u.status}">${({ pending: 'En attente', approved: 'Validé', rejected: 'Refusé' })[u.status] || esc(u.status)}</span>
       </div>
       <div class="inbox-actions" style="flex-wrap:wrap">
         <select class="status-select" onchange="updateUserRole(${u.id}, this.value)">
@@ -502,8 +536,35 @@ async function loadUsers() {
         </select>
         <button type="button" class="btn btn-sm btn-danger" onclick="if(confirm('Supprimer définitivement ${esc(u.prenom)} ${esc(u.nom)} ?')) deleteUser(${u.id})"><i class="ph ph-trash"></i> Supprimer</button>
       </div>
+      <details class="access">
+        <summary><i class="ph ph-user-gear"></i> Accès aux menus</summary>
+        <form class="access-form" onsubmit="saveAccess(event, ${u.id})">
+          <div class="access-grid">
+            ${ACCESS_MENUS.map(([k, label]) => `
+              <label><input type="checkbox" name="menu" value="${k}" ${String(u.hidden_menus || '').split(',').includes(k) ? '' : 'checked'}> ${label}</label>`).join('')}
+          </div>
+          <label class="access-planner"><input type="checkbox" name="planner" ${Number(u.planner) === 1 ? 'checked' : ''}> Fait le planning (voir et exporter les desiderata)</label>
+          <div class="access-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>
+            <span class="access-saved hidden"><i class="ph ph-check-circle"></i> Enregistré</span>
+          </div>
+        </form>
+      </details>
     </div>
   `).join('');
+}
+
+async function saveAccess(e, id) {
+  e.preventDefault();
+  const form = e.target;
+  const hidden = [...form.querySelectorAll('input[name="menu"]:not(:checked)')].map(c => c.value);
+  const planner = form.querySelector('input[name="planner"]').checked;
+  try {
+    await api(`/api/users/${id}/access`, { method: 'PUT', body: JSON.stringify({ hidden_menus: hidden, planner }) });
+    form.querySelector('.access-saved').classList.remove('hidden');
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+  }
 }
 
 async function updateUserRole(id, role) {
