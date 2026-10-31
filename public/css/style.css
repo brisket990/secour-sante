@@ -579,3 +579,13 @@ body.dark .vac-card { --off-fg: #6fd6a0; }
 .sheet-option.vac i:first-child { color: #13633d; }
 body.dark .sheet-option.vac i:first-child { color: #6fd6a0; }
 .pl-note { font-size: 0.8rem; color: var(--text-muted); padding: 10px 14px; border-top: 1px solid var(--border); }
+
+/* Message court (ex. « Appuyez encore sur retour pour quitter ») */
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 120;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  max-width: calc(100% - 32px); padding: 10px 16px; border-radius: var(--radius-pill);
+  background: var(--text); color: var(--bg); font-size: 0.88rem; font-weight: 500;
+  box-shadow: var(--shadow-md); text-align: center;
+}
+@media (max-width: 768px) { .toast { bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom)); } }

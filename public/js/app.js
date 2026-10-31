@@ -658,6 +658,43 @@ function openGps(app, lat, lng) {
   }, 1500);
 }
 
+// ===== BOUTON RETOUR ANDROID =====
+// Appelé par l'appli native (MainActivity) à chaque appui sur retour : on ferme
+// ce qui est ouvert, puis on revient à l'accueil. Renvoie false seulement quand
+// il n'y a plus rien à fermer et que l'agent a confirmé en appuyant deux fois.
+let backExitArmed = false;
+window.handleBack = function () {
+  const modal = document.querySelector('.modal:not(.hidden)');
+  if (modal) { closeModal(modal.id); return true; }
+  if (document.getElementById('sidebar').classList.contains('open')) { toggleSidebar(); return true; }
+  const onAuth = !document.getElementById('authScreen').classList.contains('hidden');
+  if (onAuth && !document.getElementById('registerForm').classList.contains('hidden')) { showAuthTab('login'); return true; }
+  if (!onAuth) {
+    const active = document.querySelector('.view.active')?.id.replace('view-', '');
+    if (active === 'checklist' && window.Checklist?.back()) return true;
+    if (active === 'hospitals' && document.querySelector('.panel-detail.has-selected')) { backToList(); return true; }
+    const home = userAccess.hidden.includes('hospitals')
+      ? document.querySelector('.tab-item[data-view]:not(.hidden)')?.dataset.view
+      : 'hospitals';
+    if (home && active !== home) { showView(home); return true; }
+  }
+  if (!backExitArmed) {
+    backExitArmed = true;
+    showToast('Appuyez encore sur retour pour quitter');
+    setTimeout(() => { backExitArmed = false; }, 2000);
+    return true;
+  }
+  return false;
+};
+
+function showToast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.remove('hidden');
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => t.classList.add('hidden'), 2000);
+}
+
 // ===== CHECK-LIST =====
 async function loadChecklist() {
   try {
