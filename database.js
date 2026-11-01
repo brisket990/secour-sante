@@ -54,6 +54,9 @@ const COLUMNS = [
   { table: 'users', name: 'hidden_menus', sql: "ALTER TABLE users ADD COLUMN hidden_menus TEXT DEFAULT ''" },
   // 1 = peut consulter et exporter le planning des desiderata
   { table: 'users', name: 'planner', sql: "ALTER TABLE users ADD COLUMN planner INTEGER DEFAULT 0" },
+  // Entrée propre à un service (urgences, réa…), facultative : vide = entrée de l'hôpital
+  { table: 'services', name: 'lat', sql: "ALTER TABLE services ADD COLUMN lat REAL" },
+  { table: 'services', name: 'lng', sql: "ALTER TABLE services ADD COLUMN lng REAL" },
 ];
 
 async function _createTablesTurso() {

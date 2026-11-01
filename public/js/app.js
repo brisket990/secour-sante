@@ -278,6 +278,13 @@ async function selectHospital(id) {
             ${s.door_codes ? `<span class="fact fact-code"><i class="ph ph-key"></i> ${esc(s.door_codes)}</span>` : ''}
             ${s.phone ? telLink(s.phone, 'fact') : ''}
           </div>
+          ${(s.lat && s.lng) ? `<div class="svc-entrance">
+            <span class="svc-entrance-tag"><i class="ph ph-door-open"></i> Entrée spécifique</span>
+            <div class="svc-gps">
+              <button type="button" class="btn btn-sm btn-primary" onclick="openGps('google', ${s.lat}, ${s.lng})"><i class="ph ph-google-logo"></i> Maps</button>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="openGps('waze', ${s.lat}, ${s.lng})"><i class="ph ph-navigation-arrow"></i> Waze</button>
+            </div>
+          </div>` : ''}
         </div>
         ${admin ? `<div class="service-actions">
           <button type="button" class="icon-btn" onclick="showServiceModal(${h.id},${s.id})" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button>
@@ -540,11 +547,11 @@ function showHospitalModal(id) {
       document.getElementById('hPhone').value = h.phone;
       document.getElementById('hLat').value = h.lat;
       document.getElementById('hLng').value = h.lng;
-      initHospitalMap();
+      hospitalPicker.show();
     });
   } else {
     ['hName','hAddress','hPhone','hLat','hLng'].forEach(id => document.getElementById(id).value = '');
-    initHospitalMap();
+    hospitalPicker.show();
   }
   document.getElementById('hospitalModal').classList.remove('hidden');
 }
@@ -561,10 +568,10 @@ function showHospitalModal(id) {
   else if (/Android/.test(navigator.userAgent)) document.getElementById('installAndroid').classList.add('first');
 })();
 
-// ===== CARTE ET RECHERCHE DE LIEU (fiche hôpital) =====
-// Leaflet + fonds OpenStreetMap, chargés seulement à l'ouverture de la fiche.
+// ===== CARTE ET RECHERCHE DE LIEU (fiches hôpital et service) =====
+// Leaflet + fonds OpenStreetMap, chargés seulement à l'ouverture d'une fiche.
 const SMUR_BEAUJON = [48.9082, 2.3104];
-let hMap = null, hMarker = null, leafletLoading = null;
+let leafletLoading = null;
 
 function loadLeaflet() {
   if (window.L) return Promise.resolve();
@@ -583,41 +590,51 @@ function loadLeaflet() {
   return leafletLoading;
 }
 
-function hCoords() {
-  const lat = parseFloat(document.getElementById('hLat').value);
-  const lng = parseFloat(document.getElementById('hLng').value);
-  return (lat && lng) ? [lat, lng] : null;
+// Carte avec repère déplaçable, reliée à deux champs latitude / longitude.
+// Un appui sur la carte ou un glissement du repère met les champs à jour.
+function makeMapPicker(mapId, latId, lngId) {
+  const latEl = document.getElementById(latId), lngEl = document.getElementById(lngId);
+  const p = { map: null, marker: null };
+  p.coords = () => {
+    const lat = parseFloat(latEl.value), lng = parseFloat(lngEl.value);
+    return (lat && lng) ? [lat, lng] : null;
+  };
+  p.set = (lat, lng) => {
+    latEl.value = lat.toFixed(6);
+    lngEl.value = lng.toFixed(6);
+    if (p.marker) p.marker.setLatLng([lat, lng]).setOpacity(1);
+  };
+  // `fallback` : centre affiché tant qu'aucun point n'est placé
+  p.show = async (fallback = SMUR_BEAUJON, fallbackZoom = 13) => {
+    try { await loadLeaflet(); } catch { document.getElementById(mapId).textContent = 'Carte indisponible (pas de connexion ?).'; return; }
+    const at = p.coords();
+    if (!p.map) {
+      p.map = L.map(mapId, { zoomControl: true, attributionControl: true });
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; OpenStreetMap',
+      }).addTo(p.map);
+      const pin = L.divIcon({ className: 'geo-pin', html: '<i class="ph ph-map-pin"></i>', iconSize: [36, 36], iconAnchor: [18, 34] });
+      p.marker = L.marker(fallback, { draggable: true, icon: pin }).addTo(p.map);
+      p.marker.on('dragend', () => { const ll = p.marker.getLatLng(); p.set(ll.lat, ll.lng); });
+      p.map.on('click', e => p.set(e.latlng.lat, e.latlng.lng));
+    }
+    p.marker.setLatLng(at || fallback).setOpacity(at ? 1 : 0.45);
+    // La fenêtre vient d'apparaître : Leaflet doit remesurer la carte
+    setTimeout(() => { p.map.invalidateSize(); p.map.setView(at || fallback, at ? 17 : fallbackZoom); }, 60);
+  };
+  p.syncFromInputs = () => {
+    const at = p.coords();
+    if (at && p.marker) { p.marker.setLatLng(at).setOpacity(1); p.map.panTo(at); }
+  };
+  p.checkInGoogleMaps = () => {
+    const at = p.coords();
+    if (!at) { alert('Placez d\'abord le repère sur la carte.'); return; }
+    openExternal(`https://www.google.com/maps/search/?api=1&query=${at[0]},${at[1]}`);
+  };
+  return p;
 }
-
-function setHospitalCoords(lat, lng) {
-  document.getElementById('hLat').value = lat.toFixed(6);
-  document.getElementById('hLng').value = lng.toFixed(6);
-  hMarker.setLatLng([lat, lng]);
-}
-
-async function initHospitalMap() {
-  try { await loadLeaflet(); } catch { document.getElementById('hMap').textContent = 'Carte indisponible (pas de connexion ?).'; return; }
-  const at = hCoords();
-  if (!hMap) {
-    hMap = L.map('hMap', { zoomControl: true, attributionControl: true });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19, attribution: '&copy; OpenStreetMap',
-    }).addTo(hMap);
-    const pin = L.divIcon({ className: 'geo-pin', html: '<i class="ph ph-map-pin"></i>', iconSize: [36, 36], iconAnchor: [18, 34] });
-    hMarker = L.marker(SMUR_BEAUJON, { draggable: true, icon: pin }).addTo(hMap);
-    hMarker.on('dragend', () => { const p = hMarker.getLatLng(); setHospitalCoords(p.lat, p.lng); });
-    hMap.on('click', e => setHospitalCoords(e.latlng.lat, e.latlng.lng));
-  }
-  hMarker.setLatLng(at || SMUR_BEAUJON);
-  hMarker.setOpacity(at ? 1 : 0.45);
-  // La fenêtre vient d'apparaître : Leaflet doit remesurer la carte
-  setTimeout(() => { hMap.invalidateSize(); hMap.setView(at || SMUR_BEAUJON, at ? 17 : 13); }, 60);
-}
-
-function syncMarkerFromInputs() {
-  const at = hCoords();
-  if (at && hMarker) { hMarker.setLatLng(at).setOpacity(1); hMap.panTo(at); }
-}
+const hospitalPicker = makeMapPicker('hMap', 'hLat', 'hLng');
+const servicePicker = makeMapPicker('sMap', 'sLat', 'sLng');
 
 let geoTimer, geoResults = [];
 function geoSearch() {
@@ -645,16 +662,9 @@ function pickPlace(i) {
   const name = document.getElementById('hName');
   if (!name.value.trim() && p.name) name.value = p.name;
   document.getElementById('hAddress').value = p.address;
-  setHospitalCoords(p.lat, p.lng);
-  hMarker.setOpacity(1);
-  hMap.setView([p.lat, p.lng], 17);
+  hospitalPicker.set(p.lat, p.lng);
+  hospitalPicker.map.setView([p.lat, p.lng], 17);
   document.getElementById('hResults').innerHTML = '';
-}
-
-function checkInGoogleMaps() {
-  const at = hCoords();
-  if (!at) { alert('Placez d\'abord le repère sur la carte.'); return; }
-  openExternal(`https://www.google.com/maps/search/?api=1&query=${at[0]},${at[1]}`);
 }
 
 async function saveHospital(e) {
@@ -687,26 +697,38 @@ async function deleteHospital(id) {
   loadHospitals();
 }
 
-function showServiceModal(hospitalId, serviceId) {
+// Position de l'hôpital du service ouvert : point de départ de la carte d'entrée
+let serviceHospitalCoords = SMUR_BEAUJON;
+
+async function showServiceModal(hospitalId, serviceId) {
   document.getElementById('serviceModalTitle').textContent = serviceId ? 'Modifier' : 'Ajouter un service';
   document.getElementById('sHospitalId').value = hospitalId;
   document.getElementById('sId').value = serviceId || '';
-  if (serviceId) {
-    api(`/api/hospitals/${hospitalId}`).then(h => {
-      const s = h.services.find(sv => sv.id === serviceId);
-      if (s) {
-        document.getElementById('sName').value = s.name;
-        document.getElementById('sBuilding').value = s.building || '';
-        document.getElementById('sFloor').value = s.floor || '';
-        document.getElementById('sDoorCodes').value = s.door_codes || '';
-        document.getElementById('sDescription').value = s.description || '';
-        document.getElementById('sPhone').value = s.phone || '';
-      }
-    });
-  } else {
-    ['sName','sBuilding','sFloor','sDoorCodes','sDescription','sPhone'].forEach(id => document.getElementById(id).value = '');
-  }
+  const h = await api(`/api/hospitals/${hospitalId}`);
+  serviceHospitalCoords = (h.lat && h.lng) ? [h.lat, h.lng] : SMUR_BEAUJON;
+  const s = serviceId ? h.services.find(sv => sv.id === serviceId) : null;
+  document.getElementById('sName').value = s ? s.name : '';
+  document.getElementById('sBuilding').value = s ? s.building || '' : '';
+  document.getElementById('sFloor').value = s ? s.floor || '' : '';
+  document.getElementById('sDoorCodes').value = s ? s.door_codes || '' : '';
+  document.getElementById('sDescription').value = s ? s.description || '' : '';
+  document.getElementById('sPhone').value = s ? s.phone || '' : '';
+  const hasEntrance = !!(s && s.lat && s.lng);
+  document.getElementById('sHasEntrance').checked = hasEntrance;
+  document.getElementById('sLat').value = hasEntrance ? s.lat : '';
+  document.getElementById('sLng').value = hasEntrance ? s.lng : '';
+  document.getElementById('sEntrance').classList.toggle('hidden', !hasEntrance);
   document.getElementById('serviceModal').classList.remove('hidden');
+  if (hasEntrance) servicePicker.show(serviceHospitalCoords, 17);
+}
+
+// Case « Entrée différente » : on part de la position de l'hôpital, à déplacer
+function toggleServiceEntrance() {
+  const on = document.getElementById('sHasEntrance').checked;
+  document.getElementById('sEntrance').classList.toggle('hidden', !on);
+  if (!on) return;
+  if (!servicePicker.coords()) servicePicker.set(...serviceHospitalCoords);
+  servicePicker.show(serviceHospitalCoords, 17);
 }
 
 async function saveService(e) {
@@ -721,6 +743,9 @@ async function saveService(e) {
     door_codes: document.getElementById('sDoorCodes').value,
     description: document.getElementById('sDescription').value,
     phone: document.getElementById('sPhone').value,
+    // Entrée propre au service, ou null pour garder celle de l'hôpital
+    lat: document.getElementById('sHasEntrance').checked ? parseFloat(document.getElementById('sLat').value) || null : null,
+    lng: document.getElementById('sHasEntrance').checked ? parseFloat(document.getElementById('sLng').value) || null : null,
   };
   try {
     if (id) await api(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(data) });

@@ -625,3 +625,11 @@ body.dark .sheet-option.vac i:first-child { color: #6fd6a0; }
 .install-steps i { font-size: 1.1rem; vertical-align: -2px; color: var(--accent); }
 .install-note { font-size: 0.85rem !important; }
 .install-os.first { order: -1; }
+
+/* Entrée propre à un service */
+.check-row { display: flex !important; align-items: center; gap: 10px; font-size: 0.92rem; cursor: pointer; }
+.svc-entrance-field .geo-map-wrap { margin: 8px 0 0; }
+.svc-entrance { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.svc-entrance-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 0.84rem; font-weight: 600; color: var(--accent); }
+.svc-entrance-tag i { font-size: 1.05rem; }
+.svc-gps { display: flex; gap: 6px; }
