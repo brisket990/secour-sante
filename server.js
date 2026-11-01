@@ -77,7 +77,14 @@ function verifyPw(pw, stored) {
 }
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// Page, scripts et styles : toujours revérifiés auprès du serveur (no-cache), pour
+// qu'un navigateur ne mélange jamais une ancienne page avec un nouveau script
+// après une mise à jour. Les images et PDF restent en cache normal.
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, file) {
+    if (/\.(html|js|css|webmanifest)$/.test(file)) res.setHeader('Cache-Control', 'no-cache');
+  },
+}));
 
 app.post('/api/login', async (req, res) => {
   // Connexion uniquement par compte (email + mot de passe). Ne pas interroger

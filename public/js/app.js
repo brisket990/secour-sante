@@ -259,63 +259,83 @@ async function selectHospital(id) {
     document.querySelector('.panel-detail').classList.add('has-selected');
   }
 
+  // Services regroupés par bâtiment, chacun en carte
   const groups = {};
   for (const s of h.services) {
     const site = s.building || 'Général';
     if (!groups[site]) groups[site] = [];
     groups[site].push(s);
   }
-  let svcHTML = '';
-  for (const [site, svcs] of Object.entries(groups)) {
-    svcHTML += `<section class="site-group"><h3 class="section-title"><i class="ph ph-buildings"></i> ${esc(site)}</h3>`;
-    svcHTML += svcs.map(s => `
-      <article class="service-card">
-        <div class="service-info">
+  const serviceCard = s => {
+    const facts = [
+      s.floor ? `<span class="fact"><i class="ph ph-stairs"></i>${esc(formatFloor(s.floor))}</span>` : '',
+      s.door_codes ? `<span class="fact fact-code"><i class="ph ph-key"></i>${esc(s.door_codes)}</span>` : '',
+      s.phone ? telLink(s.phone, 'fact') : '',
+    ].join('');
+    return `
+      <article class="svc">
+        <div class="svc-top">
           <h4>${esc(s.name)}</h4>
-          ${s.description ? `<p class="service-desc">${esc(s.description)}</p>` : ''}
-          <div class="service-facts">
-            ${s.floor ? `<span class="fact"><i class="ph ph-stairs"></i> ${esc(s.floor)}</span>` : ''}
-            ${s.door_codes ? `<span class="fact fact-code"><i class="ph ph-key"></i> ${esc(s.door_codes)}</span>` : ''}
-            ${s.phone ? telLink(s.phone, 'fact') : ''}
-          </div>
-          ${(s.lat && s.lng) ? `<div class="svc-entrance">
-            <span class="svc-entrance-tag"><i class="ph ph-door-open"></i> Entrée spécifique</span>
-            <div class="svc-gps">
-              <button type="button" class="btn btn-sm btn-primary" onclick="openGps('google', ${s.lat}, ${s.lng})"><i class="ph ph-google-logo"></i> Maps</button>
-              <button type="button" class="btn btn-sm btn-secondary" onclick="openGps('waze', ${s.lat}, ${s.lng})"><i class="ph ph-navigation-arrow"></i> Waze</button>
-            </div>
+          ${admin ? `<div class="svc-tools">
+            <button type="button" class="ghost-btn" onclick="showServiceModal(${h.id},${s.id})" aria-label="Modifier ${esc(s.name)}" title="Modifier"><i class="ph ph-pencil-simple"></i></button>
+            <button type="button" class="ghost-btn danger" onclick="deleteService(${s.id})" aria-label="Supprimer ${esc(s.name)}" title="Supprimer"><i class="ph ph-trash"></i></button>
           </div>` : ''}
         </div>
-        ${admin ? `<div class="service-actions">
-          <button type="button" class="icon-btn" onclick="showServiceModal(${h.id},${s.id})" aria-label="Modifier"><i class="ph ph-pencil-simple"></i></button>
-          <button type="button" class="icon-btn danger" onclick="deleteService(${s.id})" aria-label="Supprimer"><i class="ph ph-trash"></i></button>
+        ${s.description ? `<p class="svc-desc">${esc(s.description)}</p>` : ''}
+        ${facts ? `<div class="svc-facts">${facts}</div>` : ''}
+        ${(s.lat && s.lng) ? `<div class="svc-entrance">
+          <span class="svc-entrance-tag"><i class="ph ph-door-open"></i> Entrée spécifique</span>
+          <div class="svc-gps">
+            <button type="button" class="btn btn-sm btn-primary" onclick="openGps('google', ${s.lat}, ${s.lng})"><i class="ph ph-google-logo"></i> Maps</button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="openGps('waze', ${s.lat}, ${s.lng})"><i class="ph ph-navigation-arrow"></i> Waze</button>
+          </div>
         </div>` : ''}
-      </article>
-    `).join('');
-    svcHTML += '</section>';
-  }
-  const gps = (h.lat && h.lng) ? `
-    <div class="detail-gps">
-      <button type="button" class="btn btn-primary" onclick="openGps('google', ${h.lat}, ${h.lng})"><i class="ph ph-google-logo"></i> Google Maps</button>
-      <button type="button" class="btn btn-secondary" onclick="openGps('waze', ${h.lat}, ${h.lng})"><i class="ph ph-navigation-arrow"></i> Waze</button>
-    </div>` : '';
+      </article>`;
+  };
+  const sites = Object.entries(groups).map(([site, svcs]) => `
+    <div class="site">
+      <div class="site-name"><i class="ph ph-buildings"></i> ${esc(site)}</div>
+      <div class="svc-grid">${svcs.map(serviceCard).join('')}</div>
+    </div>`).join('');
+
   document.getElementById('hospitalDetail').innerHTML = `
     <button type="button" class="mobile-back" onclick="backToList()"><i class="ph ph-caret-left"></i> Hôpitaux</button>
-    <div class="detail-header">
-      <h2>${esc(h.name)}</h2>
-      <div class="detail-info">
-        <div class="info-line"><i class="ph ph-map-pin"></i> ${esc(h.address)}</div>
-        ${h.phone ? `<div class="info-line">${telLink(h.phone)}</div>` : ''}
+    <header class="hd">
+      <div class="hd-top">
+        <div class="hd-title">
+          <h2>${esc(h.name)}</h2>
+          <p class="hd-line"><i class="ph ph-map-pin"></i><span>${esc(h.address)}</span></p>
+          ${h.phone ? `<p class="hd-line">${telLink(h.phone)}</p>` : ''}
+        </div>
+        ${admin ? `<div class="hd-tools">
+          <button type="button" class="ghost-btn" onclick="showHospitalModal(${h.id})" aria-label="Modifier l'hôpital" title="Modifier l'hôpital"><i class="ph ph-pencil-simple"></i></button>
+          <button type="button" class="ghost-btn danger" onclick="if(confirm('Supprimer cet hôpital et ses services ?')) deleteHospital(${h.id})" aria-label="Supprimer l'hôpital" title="Supprimer l'hôpital"><i class="ph ph-trash"></i></button>
+        </div>` : ''}
       </div>
-      ${gps}
-      ${admin ? `<div class="detail-admin">
-        <button type="button" class="btn btn-secondary btn-sm" onclick="showHospitalModal(${h.id})"><i class="ph ph-pencil-simple"></i> Modifier</button>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="showServiceModal(${h.id})"><i class="ph ph-plus"></i> Service</button>
-        <button type="button" class="btn btn-danger btn-sm" onclick="if(confirm('Supprimer cet hôpital ?')) deleteHospital(${h.id})"><i class="ph ph-trash"></i> Supprimer</button>
+      ${(h.lat && h.lng) ? `<div class="go">
+        <span class="go-label"><i class="ph ph-navigation-arrow"></i> Entrée principale</span>
+        <div class="go-btns">
+          <button type="button" class="btn btn-primary" onclick="openGps('google', ${h.lat}, ${h.lng})"><i class="ph ph-google-logo"></i> Google Maps</button>
+          <button type="button" class="btn btn-secondary" onclick="openGps('waze', ${h.lat}, ${h.lng})"><i class="ph ph-navigation-arrow"></i> Waze</button>
+        </div>
       </div>` : ''}
-    </div>
-    <div class="services-section">${h.services.length === 0 ? '<div class="empty-state">Aucun service enregistré pour cet hôpital.</div>' : svcHTML}</div>`;
+    </header>
+    <section class="svc-list">
+      <div class="svc-list-head">
+        <h3>Services <span class="count">${h.services.length}</span></h3>
+        ${admin ? `<button type="button" class="btn btn-secondary btn-sm" onclick="showServiceModal(${h.id})"><i class="ph ph-plus"></i> Ajouter un service</button>` : ''}
+      </div>
+      ${h.services.length === 0 ? '<div class="empty-state">Aucun service enregistré pour cet hôpital.</div>' : sites}
+    </section>`;
   renderHospitalList('');
+}
+
+// « 1 » devient « Étage 1 », « 0 » « Rez-de-chaussée » ; le reste tel quel
+function formatFloor(floor) {
+  const f = String(floor).trim();
+  if (/^0$/.test(f)) return 'Rez-de-chaussée';
+  if (/^-?\d+$/.test(f)) return 'Étage ' + f;
+  return f;
 }
 
 function backToList() {
@@ -704,9 +724,12 @@ async function showServiceModal(hospitalId, serviceId) {
   document.getElementById('serviceModalTitle').textContent = serviceId ? 'Modifier' : 'Ajouter un service';
   document.getElementById('sHospitalId').value = hospitalId;
   document.getElementById('sId').value = serviceId || '';
+  // La fenêtre s'ouvre tout de suite ; les champs se remplissent ensuite
+  document.getElementById('serviceModal').classList.remove('hidden');
   const h = await api(`/api/hospitals/${hospitalId}`);
   serviceHospitalCoords = (h.lat && h.lng) ? [h.lat, h.lng] : SMUR_BEAUJON;
-  const s = serviceId ? h.services.find(sv => sv.id === serviceId) : null;
+  const s = serviceId ? h.services.find(sv => Number(sv.id) === Number(serviceId)) : null;
+  if (serviceId && !s) { closeModal('serviceModal'); showToast('Service introuvable, rechargez la page'); return; }
   document.getElementById('sName').value = s ? s.name : '';
   document.getElementById('sBuilding').value = s ? s.building || '' : '';
   document.getElementById('sFloor').value = s ? s.floor || '' : '';
@@ -714,11 +737,12 @@ async function showServiceModal(hospitalId, serviceId) {
   document.getElementById('sDescription').value = s ? s.description || '' : '';
   document.getElementById('sPhone').value = s ? s.phone || '' : '';
   const hasEntrance = !!(s && s.lat && s.lng);
-  document.getElementById('sHasEntrance').checked = hasEntrance;
+  const box = document.getElementById('sHasEntrance');
+  if (!box) return; // ancienne page en cache : le reste du formulaire fonctionne
+  box.checked = hasEntrance;
   document.getElementById('sLat').value = hasEntrance ? s.lat : '';
   document.getElementById('sLng').value = hasEntrance ? s.lng : '';
   document.getElementById('sEntrance').classList.toggle('hidden', !hasEntrance);
-  document.getElementById('serviceModal').classList.remove('hidden');
   if (hasEntrance) servicePicker.show(serviceHospitalCoords, 17);
 }
 
@@ -744,8 +768,8 @@ async function saveService(e) {
     description: document.getElementById('sDescription').value,
     phone: document.getElementById('sPhone').value,
     // Entrée propre au service, ou null pour garder celle de l'hôpital
-    lat: document.getElementById('sHasEntrance').checked ? parseFloat(document.getElementById('sLat').value) || null : null,
-    lng: document.getElementById('sHasEntrance').checked ? parseFloat(document.getElementById('sLng').value) || null : null,
+    lat: document.getElementById('sHasEntrance')?.checked ? parseFloat(document.getElementById('sLat').value) || null : null,
+    lng: document.getElementById('sHasEntrance')?.checked ? parseFloat(document.getElementById('sLng').value) || null : null,
   };
   try {
     if (id) await api(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(data) });
@@ -825,6 +849,13 @@ window.handleBack = function () {
   }
   return false;
 };
+
+// Erreur inattendue : un message court plutôt qu'un bouton qui ne fait rien
+window.addEventListener('error', e => showToast('Erreur : ' + (e.message || 'inconnue')));
+window.addEventListener('unhandledrejection', e => {
+  const msg = e.reason && e.reason.message;
+  if (msg && msg !== 'Session expirée') showToast('Erreur : ' + msg);
+});
 
 function showToast(text) {
   const t = document.getElementById('toast');

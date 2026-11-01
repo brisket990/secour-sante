@@ -14,6 +14,8 @@
   --accent-hover: #1a43a3;
   --accent-soft: #e8eefb;
   --accent-contrast: #ffffff;
+  --accent-fill: #1f4fbf;
+  --accent-fill-hover: #1a43a3;
   --primary: var(--text);
   --brand: #0f2a5c;
   --hivis: #d4e600;
@@ -51,6 +53,8 @@ body.dark {
   --accent-hover: #86aaf5;
   --accent-soft: #18264a;
   --accent-contrast: #0b1220;
+  --accent-fill: #3567d6;
+  --accent-fill-hover: #2f5cc2;
   --green: #4cc58c;
   --green-soft: #0f2a20;
   --red: #f07a7a;
@@ -214,8 +218,8 @@ main { flex: 1; padding: 28px; width: 100%; max-width: 1200px; }
 .btn i { font-size: 1.1rem; }
 .btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.55; cursor: default; }
-.btn-primary { background: var(--accent); color: var(--accent-contrast); }
-.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary { background: var(--accent-fill); color: #fff; }
+.btn-primary:hover { background: var(--accent-fill-hover); }
 .btn-secondary, .btn-outline { background: var(--card); color: var(--text); border-color: var(--border-strong); }
 .btn-secondary:hover, .btn-outline:hover { background: var(--hover-bg); }
 .btn-danger { background: var(--card); color: var(--red); border-color: var(--border-strong); }
@@ -633,3 +637,53 @@ body.dark .sheet-option.vac i:first-child { color: #6fd6a0; }
 .svc-entrance-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 0.84rem; font-weight: 600; color: var(--accent); }
 .svc-entrance-tag i { font-size: 1.05rem; }
 .svc-gps { display: flex; gap: 6px; }
+
+/* ===== Fiche hôpital ===== */
+.ghost-btn {
+  width: 38px; height: 38px; display: grid; place-items: center; flex-shrink: 0;
+  border: 0; background: transparent; border-radius: var(--radius-sm);
+  color: var(--text-muted); font-size: 1.15rem; cursor: pointer;
+}
+.ghost-btn:hover { background: var(--hover-bg); color: var(--text); }
+.ghost-btn.danger:hover { background: var(--red-soft); color: var(--red); }
+
+.hd { display: flex; flex-direction: column; gap: 18px; padding-bottom: 22px; border-bottom: 1px solid var(--border); }
+.hd-top { display: flex; align-items: flex-start; gap: 12px; }
+.hd-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.hd-title h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 2px; }
+.hd-line { display: flex; align-items: center; gap: 8px; color: var(--text-muted); }
+.hd-line > i { font-size: 1.1rem; flex-shrink: 0; }
+.hd-tools { display: flex; gap: 2px; margin: -4px -6px 0 0; }
+
+.go { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--radius); background: var(--card-sunken); border: 1px solid var(--border); }
+.go-label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); }
+.go-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.go-btns .btn { min-height: 50px; font-size: 0.98rem; }
+
+.svc-list { display: flex; flex-direction: column; gap: 18px; margin-top: 22px; }
+.svc-list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.svc-list-head h3 { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
+.svc-list-head .count { font-family: var(--mono); font-size: 0.78rem; font-weight: 600; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--hover-bg); color: var(--text-muted); }
+.site { display: flex; flex-direction: column; gap: 10px; }
+.site-name { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+.svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+
+.svc { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--card-sunken); border: 1px solid var(--border); border-radius: var(--radius); }
+.svc-top { display: flex; align-items: flex-start; gap: 8px; }
+.svc-top h4 { flex: 1; min-width: 0; font-size: 1.02rem; font-weight: 600; padding-top: 2px; }
+.svc-tools { display: flex; gap: 2px; margin: -6px -8px 0 0; }
+.svc-tools .ghost-btn { width: 34px; height: 34px; font-size: 1.05rem; }
+.svc-desc { color: var(--text-muted); font-size: 0.88rem; margin-top: -4px; }
+.svc-facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.svc-facts .fact { gap: 6px; }
+.svc .svc-entrance { margin-top: 0; }
+
+@media (max-width: 768px) {
+  .hd-title h2 { font-size: 1.3rem; }
+  .svc { background: var(--card); }
+  .go { background: var(--card); }
+}
+
+/* Barre du haut sur mobile : bouton « + » sans texte pour laisser le titre entier */
+.hide-sm { display: inline; }
+@media (max-width: 768px) { .hide-sm { display: none; } #addBtn { padding: 6px 10px; } }
