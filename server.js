@@ -290,12 +290,23 @@ app.delete('/api/hospitals/:id', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// Entrée propre au service : les deux coordonnées ou aucune (null = entrée de l'hôpital)
+function serviceEntrance(body) {
+  const num = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
+  const lat = num(body.lat), lng = num(body.lng);
+  if (lat == null || lng == null) return { lat: null, lng: null };
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return { error: 'Position de l\'entrée invalide' };
+  return { lat, lng };
+}
+
 app.post('/api/services', requireAuth, async (req, res) => {
   const { hospital_id, name, floor, building, door_codes, description, phone } = req.body;
   if (!hospital_id || !name) return res.status(400).json({ error: 'ID hôpital et nom requis' });
+  const entrance = serviceEntrance(req.body);
+  if (entrance.error) return res.status(400).json({ error: entrance.error });
   const result = await run(
-    'INSERT INTO services (hospital_id, name, floor, building, door_codes, description, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [hospital_id, name, floor || '', building || '', door_codes || '', description || '', phone || '']
+    'INSERT INTO services (hospital_id, name, floor, building, door_codes, description, phone, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [hospital_id, name, floor || '', building || '', door_codes || '', description || '', phone || '', entrance.lat, entrance.lng]
   );
   res.status(201).json({ id: result.lastInsertRowid });
 });
@@ -303,9 +314,11 @@ app.post('/api/services', requireAuth, async (req, res) => {
 app.put('/api/services/:id', requireAuth, async (req, res) => {
   const { name, floor, building, door_codes, description, phone } = req.body;
   if (!name) return res.status(400).json({ error: 'Nom requis' });
+  const entrance = serviceEntrance(req.body);
+  if (entrance.error) return res.status(400).json({ error: entrance.error });
   await run(
-    'UPDATE services SET name=?, floor=?, building=?, door_codes=?, description=?, phone=? WHERE id=?',
-    [name, floor || '', building || '', door_codes || '', description || '', phone || '', req.params.id]
+    'UPDATE services SET name=?, floor=?, building=?, door_codes=?, description=?, phone=?, lat=?, lng=? WHERE id=?',
+    [name, floor || '', building || '', door_codes || '', description || '', phone || '', entrance.lat, entrance.lng, req.params.id]
   );
   res.json({ success: true });
 });

@@ -492,12 +492,12 @@
           <div id="hMap" class="geo-map" aria-label="Carte : touchez pour placer l'entrée"></div>
           <div class="geo-map-foot">
             <small class="form-help">Touchez la carte ou déplacez le repère pour placer l'entrée.</small>
-            <a href="#" onclick="checkInGoogleMaps();return false"><i class="ph ph-google-logo"></i> Vérifier dans Google Maps</a>
+            <a href="#" onclick="hospitalPicker.checkInGoogleMaps();return false"><i class="ph ph-google-logo"></i> Vérifier dans Google Maps</a>
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label for="hLat">Latitude</label><input type="number" step="any" id="hLat" oninput="syncMarkerFromInputs()"></div>
-          <div class="form-group"><label for="hLng">Longitude</label><input type="number" step="any" id="hLng" oninput="syncMarkerFromInputs()"></div>
+          <div class="form-group"><label for="hLat">Latitude</label><input type="number" step="any" id="hLat" oninput="hospitalPicker.syncFromInputs()"></div>
+          <div class="form-group"><label for="hLng">Longitude</label><input type="number" step="any" id="hLng" oninput="hospitalPicker.syncFromInputs()"></div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('hospitalModal')">Annuler</button>
@@ -524,6 +524,18 @@
         </div>
         <div class="form-group"><label for="sDescription">Description</label><textarea id="sDescription" rows="2"></textarea></div>
         <div class="form-group"><label for="sPhone">Téléphone</label><input type="tel" id="sPhone"></div>
+        <div class="form-group svc-entrance-field">
+          <label class="check-row"><input type="checkbox" id="sHasEntrance" onchange="toggleServiceEntrance()"> Entrée différente de celle de l'hôpital</label>
+          <small class="form-help">Par exemple l'entrée des urgences ou de la réanimation. Le GPS de ce service mènera à ce point.</small>
+          <div id="sEntrance" class="geo-map-wrap hidden">
+            <div id="sMap" class="geo-map" aria-label="Carte : touchez pour placer l'entrée du service"></div>
+            <div class="geo-map-foot">
+              <small class="form-help">Touchez la carte ou déplacez le repère sur l'entrée du service.</small>
+              <a href="#" onclick="servicePicker.checkInGoogleMaps();return false"><i class="ph ph-google-logo"></i> Vérifier dans Google Maps</a>
+            </div>
+            <input type="hidden" id="sLat"><input type="hidden" id="sLng">
+          </div>
+        </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal('serviceModal')">Annuler</button>
           <button type="submit" class="btn btn-primary">Enregistrer</button>
