@@ -836,7 +836,6 @@ window.handleBack = function () {
   if (!onAuth) {
     const active = document.querySelector('.view.active')?.id.replace('view-', '');
     if (active === 'checklist' && window.Checklist?.back()) return true;
-    if (active === 'overtime' && !userAccess.hidden.includes('checklist')) { showView('checklist'); return true; }
     if (active === 'hospitals' && document.querySelector('.panel-detail.has-selected')) { backToList(); return true; }
     const home = userAccess.hidden.includes('hospitals')
       ? document.querySelector('.tab-item[data-view]:not(.hidden)')?.dataset.view
@@ -906,7 +905,7 @@ function telLink(phone, cls = 'tel-link') {
 document.addEventListener('click', e => {
   // Fermer sidebar si clic sur le contenu principal (mobile), sauf sur les
   // boutons qui l'ouvrent (sinon elle se refermerait aussitôt)
-  if (window.innerWidth <= 768 && !e.target.closest('.sidebar, .hamburger, .tab-more')) {
+  if (window.innerWidth <= 768 && !e.target.closest('.sidebar, .hamburger')) {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('open');
   }
