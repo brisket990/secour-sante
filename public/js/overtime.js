@@ -11,6 +11,7 @@ const OT_FORM = {
 const SHIFTS = [
   { label: '7h - 19h', value: '07H 19H', start: '07:00', end: '19:00' },
   { label: '8h - 18h', value: '08H 18H', start: '08:00', end: '18:00' },
+  { label: '19h - 7h (nuit)', value: '19H 07H', start: '19:00', end: '07:00' },
 ];
 const SMUR_CODE = 'BJN';
 
@@ -19,14 +20,12 @@ const pad = n => String(n).padStart(2, '0');
 const minutes = hhmm => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
 const shift = () => SHIFTS.find(s => s.value === document.querySelector('input[name="otShift"]:checked')?.value) || SHIFTS[0];
 
-// Minutes de dépassement. Une fin avant le début du service est prise pour une
-// fin après minuit (service 7h-19h fini à 1h : 6h) ; une fin pendant le service
-// ne donne aucun dépassement.
+// Minutes de dépassement, comptées depuis le début du service pour gérer le
+// passage de minuit : 7h-19h fini à 1h donne 6h, 19h-7h fini à 8h30 donne 1h30.
+// Une fin pendant le service ne donne aucun dépassement.
+const sinceStart = (s, hhmm) => (minutes(hhmm) - minutes(s.start) + 1440) % 1440;
 function overtimeMinutes(s, real) {
-  const r = minutes(real), end = minutes(s.end);
-  if (r > end) return r - end;
-  if (r < minutes(s.start)) return r + 1440 - end;
-  return 0;
+  return Math.max(0, sinceStart(s, real) - sinceStart(s, s.end));
 }
 const formatDuration = m => `${Math.floor(m / 60)}h${pad(m % 60)}`; // 90 -> 1h30
 const formatClock = hhmm => { const [h, m] = hhmm.split(':'); return `${Number(h)}h${m === '00' ? '' : m}`; }; // 19:30 -> 19h30, 18:00 -> 18h
@@ -69,8 +68,9 @@ function update() {
   if (motif === '__other_option__') params.push(`entry.${OT_FORM.motif}.other_option_response=${encodeURIComponent(other)}`);
   go.removeAttribute('aria-disabled');
   go.href = OT_FORM.url + '&' + params.join('&');
-  // Fin après minuit ou très long dépassement : souvent une faute de frappe
-  const afterMidnight = minutes(real) < minutes(s.start);
+  // Service de jour fini après minuit, ou très long dépassement : souvent une
+  // faute de frappe (une nuit, elle, finit toujours après minuit)
+  const afterMidnight = minutes(s.start) < minutes(s.end) && minutes(real) < minutes(s.start);
   msg.className = afterMidnight || over > 360 ? 'miss' : '';
   msg.textContent = afterMidnight
     ? `Fin après minuit : ${formatDuration(over)}. Vérifiez l'heure et la date.`
