@@ -25,7 +25,7 @@
 .cl-field > label, .cl-lbl { font-weight: 600; font-size: 0.85rem; }
 .cl-lbl small, .cl-field small { font-weight: 400; color: var(--text-muted); }
 .cl-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.cl input[type=text], .cl input[type=number], .cl select, .cl textarea {
+.cl input[type=text], .cl input[type=number], .cl input[type=date], .cl input[type=time], .cl select, .cl textarea {
   width: 100%; font: inherit; font-size: 1rem; font-weight: 500; color: var(--text); background: var(--input-bg);
   border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-variant-numeric: tabular-nums; }
 .cl textarea { min-height: 64px; resize: vertical; font-size: 0.92rem; }
@@ -65,3 +65,10 @@
   .cl-bar { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); padding-bottom: 12px; border-radius: var(--radius); }
 }
 @media (prefers-reduced-motion: reduce) { .cl-chev { transition: none; } }
+
+/* Dépassement horaire */
+.ot-value { min-height: 46px; display: flex; align-items: center; font-weight: 500; overflow-wrap: anywhere; }
+.ot-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.ot-result strong { font-family: var(--mono); font-size: 1.5rem; }
+.ot-result.none { background: var(--hover-bg); color: var(--text-muted); font-weight: 500; font-size: 0.88rem; }
+.cl .cl-pick.hidden { display: none; }

@@ -99,6 +99,9 @@
       <a id="navChecklist" class="nav-item" href="#" data-view="checklist" onclick="return showView('checklist')">
         <i class="ph ph-clipboard-text nav-icon"></i><span>Check-list</span>
       </a>
+      <a class="nav-item" href="#" data-view="overtime" onclick="return showView('overtime')">
+        <i class="ph ph-clock-clockwise nav-icon"></i><span>Dépassement horaire</span>
+      </a>
       <a class="nav-item" href="#" data-view="desiderata" onclick="return showView('desiderata')">
         <i class="ph ph-calendar-check nav-icon"></i><span>Desiderata</span>
       </a>
@@ -258,10 +261,11 @@
       <div id="view-checklist" class="view cl">
         <div class="cl-wrap" id="cl-menu">
           <div class="view-header">
-            <h2>Quelle check-list ?</h2>
-            <p>Choisissez le véhicule. Le formulaire s'ouvre ensuite pré-rempli dans le navigateur.</p>
+            <h2>Quel formulaire ?</h2>
+            <p>Il s'ouvre ensuite pré-rempli dans le navigateur.</p>
           </div>
           <div class="cl-menu" id="cl-picks"></div>
+          <button class="cl-pick access-item" type="button" data-view="overtime" onclick="showView('overtime')"><b>Dépassement horaire</b><span>Heures supplémentaires en fin de service</span></button>
         </div>
         <div class="cl-wrap" id="cl-app" hidden>
           <button class="cl-back" id="cl-backBtn" type="button"><i class="ph ph-caret-left"></i> Changer de check-list</button>
@@ -362,6 +366,45 @@
             <div id="plSettingsSuccess" class="contact-success hidden"><i class="ph ph-check-circle"></i> Règles enregistrées.</div>
           </form>
         </section>
+      </div>
+
+      <!-- Dépassement horaire -->
+      <div id="view-overtime" class="view cl">
+        <div class="cl-wrap">
+          <div class="cl-head">
+            <span class="cl-tag">SMUR Beaujon</span>
+            <h2>Dépassement horaire</h2>
+            <p>Saisissez votre fin de service réelle : le dépassement est calculé. Il ne restera qu'à toucher Envoyer dans le formulaire.</p>
+          </div>
+          <section class="cl-card">
+            <div class="cl-row2">
+              <div class="cl-field"><span class="cl-lbl">Nom</span><div class="ot-value" id="otName"></div></div>
+              <div class="cl-field"><label for="otDate">Date</label><input type="date" id="otDate"></div>
+            </div>
+            <div class="cl-field"><span class="cl-lbl">Amplitude horaire</span><div class="cl-chips" id="otShift"></div></div>
+            <div class="cl-field">
+              <label for="otEnd">Heure de fin de service réelle</label>
+              <input type="time" id="otEnd">
+              <small class="form-help" id="otEndHelp"></small>
+            </div>
+            <div class="ot-result none" id="otResult" role="status"></div>
+            <div class="cl-field">
+              <label for="otMotif">Motif</label>
+              <select id="otMotif">
+                <option value="PRIMAIRE">Primaire</option>
+                <option value="SECONDAIRE">Secondaire</option>
+                <option value="RELEVE">Relève</option>
+                <option value="S.S.E">S.S.E</option>
+                <option value="__other_option__">Autre</option>
+              </select>
+            </div>
+            <div class="cl-field hidden" id="otOtherField"><label for="otOther">Préciser le motif</label><input type="text" id="otOther"></div>
+          </section>
+          <div class="cl-bar">
+            <a class="cl-go" id="otGo" href="#" aria-disabled="true">Ouvrir le formulaire</a>
+            <p id="otMsg"></p>
+          </div>
+        </div>
       </div>
 
       <!-- Profil -->
@@ -571,5 +614,6 @@
   <script src="js/app.js"></script>
   <script src="js/checklist.js"></script>
   <script src="js/desiderata.js"></script>
+  <script src="js/overtime.js"></script>
 </body>
 </html>

@@ -15,7 +15,7 @@ const TYPES = {
 };
 const VACANCES_NOTE = 'Vacances = information seulement, posées sur Gestime';
 const isOff = t => !!TYPES[t] && !TYPES[t].info;
-const MENUS = ['hospitals', 'recherche', 'checklist', 'grandegarde', 'desiderata', 'contact'];
+const MENUS = ['hospitals', 'recherche', 'checklist', 'overtime', 'grandegarde', 'desiderata', 'contact'];
 // Par défaut : saisie possible du mois +2 jusqu'à deux ans après le mois en cours
 const DEFAULT_SETTINGS = { open_from: 2, open_to: 24, max_per_month: 6, max_consecutive: 3, types: ['jour', 'nuit', 'both'] };
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];

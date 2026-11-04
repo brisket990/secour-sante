@@ -62,6 +62,7 @@ function showView(name) {
   if (name === 'profile') loadProfile();
   if (name === 'desiderata') loadDesiderata();
   if (name === 'planning') loadPlanning();
+  if (name === 'overtime') loadOvertime();
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('open');
@@ -182,7 +183,7 @@ function updateAdminUI() {
 // ===== ACCÈS PAR UTILISATEUR =====
 // Menus que l'admin peut masquer pour un utilisateur (clés = data-view)
 const ACCESS_MENUS = [
-  ['hospitals', 'Hôpitaux'], ['recherche', 'Recherche rapide'], ['checklist', 'Check-list'],
+  ['hospitals', 'Hôpitaux'], ['recherche', 'Recherche rapide'], ['checklist', 'Check-list'], ['overtime', 'Dépassement horaire'],
   ['grandegarde', 'Grande garde'], ['desiderata', 'Desiderata'], ['contact', 'Proposer une modification'],
 ];
 let userAccess = { hidden: [], planner: false };
@@ -196,7 +197,7 @@ async function refreshAccess() {
       userAccess = { hidden: String(p.hidden_menus || '').split(',').filter(Boolean), planner: Number(p.planner) === 1 };
     } catch { userAccess = { hidden: [], planner: false }; }
   }
-  document.querySelectorAll('.nav-item[data-view], .tab-item[data-view]').forEach(el => {
+  document.querySelectorAll('.nav-item[data-view], .tab-item[data-view], .access-item[data-view]').forEach(el => {
     if (ACCESS_MENUS.some(([k]) => k === el.dataset.view)) el.classList.toggle('hidden', userAccess.hidden.includes(el.dataset.view));
   });
   document.getElementById('navPlanning').classList.toggle('hidden', !userAccess.planner);
@@ -835,6 +836,7 @@ window.handleBack = function () {
   if (!onAuth) {
     const active = document.querySelector('.view.active')?.id.replace('view-', '');
     if (active === 'checklist' && window.Checklist?.back()) return true;
+    if (active === 'overtime' && !userAccess.hidden.includes('checklist')) { showView('checklist'); return true; }
     if (active === 'hospitals' && document.querySelector('.panel-detail.has-selected')) { backToList(); return true; }
     const home = userAccess.hidden.includes('hospitals')
       ? document.querySelector('.tab-item[data-view]:not(.hidden)')?.dataset.view
