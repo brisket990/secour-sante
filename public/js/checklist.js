@@ -93,7 +93,7 @@ const FORMS={
     url:"https://docs.google.com/forms/d/e/1FAIpQLSeybrWXu5G6ExLghtE4ke0AKARzcojji_mBIo7-BudACzHAKg/viewform?usp=pp_url",
     quick:[
       {k:"aph",id:1909948002,label:"Numéro APH",type:"text",req:1,remember:1,half:1},
-      {k:"umh",id:1068065150,label:"N° AP de l'UMH",type:"select",opts:["4048","4026","4011"],req:1,remember:1,half:1},
+      {k:"umh",id:1068065150,label:"N° AP de l'UMH",type:"select",opts:["4048","4026","4011"],ambBy:{"4048":"BJN 02","4026":"BJN 03","4011":"BJN 04"},req:1,remember:1,half:1},
       {k:"amb",id:930596245,label:"Ambulance",type:"chips",opts:["BJN 02","BJN 03","BJN 04"],req:1,remember:1},
       {k:"km",id:1377107286,label:"Kilométrage",type:"num",req:1,half:1},
       {k:"o2",id:784180295,label:"Oxygène",unit:"L",type:"num",req:1,half:1},
@@ -164,6 +164,7 @@ function open(k){
     if(q.type==="chips") chips($("q_"+q.k),"cl_q_"+q.k,q.opts,saved||q.def||"");
     else $("q_"+q.k).value=saved||q.def||"";
   });
+  setDefaultAmb();
   // sections
   const host=$("sections"); host.innerHTML="";
   F.sections.forEach(sec=>{
@@ -182,6 +183,14 @@ function open(k){
   chips($("nc"),"cl_nc",F.ncOpts||["Non","Oui"],"Non"); $("nc-item").hidden=!F.nc;
   $("menu").hidden=true; $("app").hidden=false; window.scrollTo(0,0);
   update();
+}
+
+// Chaque N° AP a son ambulance par défaut, que l'agent peut encore changer à la main
+function setDefaultAmb(){
+  const num=F.quick.find(q=>q.ambBy); if(!num)return;
+  const amb=num.ambBy[qv(num)];
+  const chip=amb&&view.querySelector(`input[name="cl_q_amb"][value="${CSS.escape(amb)}"]`);
+  if(chip)chip.checked=true;
 }
 
 function update(){
@@ -204,6 +213,7 @@ function update(){
     msg.className=needText.length?"miss":"";
     msg.textContent=needText.length?"Décris les écarts : "+needText.join(", "):(total?`${total} écart${total>1?"s":""} signalé${total>1?"s":""}. `:"Tout conforme. ")+"Ensuite : Suivant jusqu'à Envoyer.";}
 }
+view.addEventListener("change",e=>{if(e.target.id===P+"q_umh")setDefaultAmb()});
 view.addEventListener("input",update); view.addEventListener("change",update);
 $("go").addEventListener("click",e=>{
   e.preventDefault();
