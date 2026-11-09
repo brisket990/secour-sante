@@ -307,6 +307,7 @@
               <h3 id="deMonthTitle"></h3>
               <span class="de-count" id="deCount"></span>
             </div>
+            <p class="de-deadline hidden" id="deDeadline"></p>
             <div class="de-weekdays" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
             <div class="de-grid" id="deGrid"></div>
             <div class="de-legend" id="deLegend"></div>
@@ -360,6 +361,16 @@
               <label><input type="checkbox" name="setTypes" value="jour"> Jour</label>
               <label><input type="checkbox" name="setTypes" value="nuit"> Nuit</label>
               <label><input type="checkbox" name="setTypes" value="both"> Jour et nuit</label>
+            </fieldset>
+            <fieldset class="form-group dl-box">
+              <legend>Dates butoir par mois <span class="form-help">(facultatif)</span></legend>
+              <small class="form-help">Dernier jour où les agents peuvent saisir ou modifier leurs desiderata pour ce mois. Le mois s'ouvre dès l'enregistrement et se ferme après cette date. Sans date butoir, le mois suit les règles ci-dessus.</small>
+              <ul class="dl-list" id="dlList"></ul>
+              <div class="dl-add">
+                <select id="dlMonth" aria-label="Mois"></select>
+                <input type="date" id="dlDate" aria-label="Date butoir">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addDeadline()"><i class="ph ph-plus"></i> Ajouter</button>
+              </div>
             </fieldset>
             <p class="auth-error hidden" id="plSettingsError"></p>
             <div class="form-actions"><button type="submit" class="btn btn-primary">Enregistrer les règles</button></div>

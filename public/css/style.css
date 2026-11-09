@@ -524,6 +524,18 @@ body.dark .off-both { --off-bg: #3e1a2b; --off-fg: #f19ac0; }
 .pl-total { font-family: var(--mono); font-weight: 700; }
 .pl-settings { margin-top: 24px; }
 .pl-settings h3 { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin-bottom: 16px; }
+.de-deadline { display: flex; align-items: center; gap: 6px; margin: -6px 0 12px; font-size: 0.85rem; font-weight: 600; color: var(--amber); }
+.dl-box { border: 0; display: flex; flex-direction: column; gap: 8px; }
+.dl-box legend { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+.dl-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.dl-list:empty { display: none; }
+.dl-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; }
+.dl-list li span { min-width: 0; }
+.dl-list li .icon-btn { width: 36px; height: 36px; }
+.dl-add { display: flex; flex-wrap: wrap; gap: 8px; }
+.dl-closed { font-style: normal; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); background: var(--hover-bg); padding: 1px 8px; border-radius: var(--radius-pill); white-space: nowrap; }
+.dl-add select { flex: 3 1 170px; min-width: 0; }
+.dl-add input { flex: 2 1 140px; min-width: 0; }
 .checks { border: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .checks legend { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
 .checks label, .access label { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; }
