@@ -13,6 +13,7 @@ const daysIn = ym => { const [y, m] = ym.split('-').map(Number); return new Date
 const weekdayOf = day => new Date(day + 'T00:00:00Z').getUTCDay();
 const pad = n => String(n).padStart(2, '0');
 const longDate = day => `${Number(day.slice(8))} ${MONTHS_FR[+day.slice(5, 7) - 1].toLowerCase()} ${day.slice(0, 4)}`;
+const shortDate = day => `${day.slice(8)}/${day.slice(5, 7)}`;
 const shiftMonth = (ym, n) => new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1)).toISOString().slice(0, 7);
 
 // ===== Agent =====
@@ -38,13 +39,22 @@ async function loadDesiderata() {
 function renderDesiderata() {
   // Jusqu'à 24 mois ouverts : flèches mois par mois, ou liste pour sauter loin.
   // Les mois où l'agent a déjà posé des OFF sont signalés dans la liste.
+  // Dates butoir des mois ouverts : bandeau en haut, chaque mois cliquable
+  const deadlines = de.settings.deadlines || {};
+  const withDeadline = de.months.filter(m => deadlines[m]);
+  const banner = document.getElementById('deDeadlines');
+  banner.classList.toggle('hidden', !withDeadline.length);
+  banner.innerHTML = `<i class="ph ph-hourglass-medium"></i><div><strong>${withDeadline.length > 1 ? 'Dates butoir' : 'Date butoir'}</strong>
+    <ul>${withDeadline.map(m => `<li><button type="button" class="de-dl-link" onclick="deSelectMonth('${m}')">${monthLabel(m)}</button> : saisie jusqu'au ${longDate(deadlines[m])} inclus</li>`).join('')}</ul>
+    <span class="de-dl-after">Après cette date, le mois n'est plus modifiable.</span></div>`;
   const select = document.getElementById('deMonthSelect');
   select.innerHTML = de.months.map(m => {
     const inMonth = Object.entries(de.days).filter(([d]) => d.startsWith(m));
     const off = inMonth.filter(([, t]) => isOffType(de.types, t)).length;
     const vac = inMonth.length - off;
     const marks = [off && `${off} OFF`, vac && 'vac.'].filter(Boolean).join(' + ');
-    return `<option value="${m}" ${m === deMonth ? 'selected' : ''}>${monthLabel(m)}${marks ? ` (${marks})` : ''}</option>`;
+    const dl = deadlines[m] ? ` · avant le ${shortDate(deadlines[m])}` : '';
+    return `<option value="${m}" ${m === deMonth ? 'selected' : ''}>${monthLabel(m)}${marks ? ` (${marks})` : ''}${dl}</option>`;
   }).join('');
   const idx = de.months.indexOf(deMonth);
   document.getElementById('dePrev').disabled = idx <= 0;
