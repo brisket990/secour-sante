@@ -917,14 +917,26 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// Swipe gesture for sidebar on mobile
+// Geste du doigt sur mobile : le menu ne s'ouvre que depuis le bord gauche de
+// l'écran, pour ne pas gêner le défilement d'un tableau ou le déplacement d'une carte.
 (function() {
-  let startX = 0, startY = 0;
-  document.addEventListener('touchstart', e => {
-    if (e.touches.length === 1) {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
+  const EDGE = 24, OPEN_DISTANCE = 60, CLOSE_DISTANCE = 30;
+  let startX = 0, startY = 0, canOpen = false;
+
+  function movesSideways(el) {
+    for (; el && el !== document.body; el = el.parentElement) {
+      if (el.classList.contains('leaflet-container')) return true;
+      const overflow = getComputedStyle(el).overflowX;
+      if ((overflow === 'auto' || overflow === 'scroll') && el.scrollWidth > el.clientWidth) return true;
     }
+    return false;
+  }
+
+  document.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) { canOpen = false; return; }
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    canOpen = startX <= EDGE && !movesSideways(e.target);
   }, { passive: true });
   document.addEventListener('touchend', e => {
     if (window.innerWidth > 768) return;
@@ -932,8 +944,8 @@ document.addEventListener('keydown', e => {
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
     if (Math.abs(dy) > 100) return;
-    if (!sidebar.classList.contains('open') && dx > 30) toggleSidebar();
-    if (sidebar.classList.contains('open') && dx < -30) toggleSidebar();
+    if (!sidebar.classList.contains('open') && canOpen && dx > OPEN_DISTANCE) toggleSidebar();
+    else if (sidebar.classList.contains('open') && dx < -CLOSE_DISTANCE) toggleSidebar();
   }, { passive: true });
 })();
 
