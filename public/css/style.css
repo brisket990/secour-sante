@@ -591,6 +591,10 @@ body.dark .vac-card { --off-fg: #6fd6a0; }
 }
 .vac-notice i { color: var(--amber); font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
 .vac-notice.small { margin: 0; font-size: 0.8rem; padding: 8px 10px; }
+.de-dl-banner { margin-bottom: 0; }
+.de-dl-banner ul { list-style: none; margin: 4px 0; display: flex; flex-direction: column; gap: 2px; }
+.de-dl-link { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--accent); text-decoration: underline; cursor: pointer; }
+.de-dl-after { font-size: 0.8rem; color: var(--text-muted); }
 .sheet-sep { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); padding: 8px 2px 0; border-top: 1px solid var(--border); margin-top: 4px; }
 .sheet-option.vac i:first-child { color: #13633d; }
 body.dark .sheet-option.vac i:first-child { color: #6fd6a0; }
