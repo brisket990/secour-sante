@@ -16,8 +16,9 @@ const TYPES = {
 const VACANCES_NOTE = 'Vacances = information seulement, posées sur Gestime';
 const isOff = t => !!TYPES[t] && !TYPES[t].info;
 const MENUS = ['hospitals', 'recherche', 'checklist', 'overtime', 'grandegarde', 'desiderata', 'contact'];
-// Par défaut : saisie possible du mois +2 jusqu'à deux ans après le mois en cours
-const DEFAULT_SETTINGS = { open_from: 2, open_to: 24, max_per_month: 6, max_consecutive: 3, types: ['jour', 'nuit', 'both'] };
+// Par défaut : saisie possible du mois +2 jusqu'à deux ans après le mois en cours.
+// deadlines : dates butoir facultatives, mois -> dernier jour de saisie (YYYY-MM -> YYYY-MM-DD).
+const DEFAULT_SETTINGS = { open_from: 2, open_to: 24, max_per_month: 6, max_consecutive: 3, types: ['jour', 'nuit', 'both'], deadlines: {} };
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const WEEKDAYS_FR = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -49,10 +50,17 @@ function monthLabel(ym) {
   const [y, m] = ym.split('-').map(Number);
   return `${MONTHS_FR[m - 1]} ${y}`;
 }
-function openMonths(s) {
-  const current = todayParis().slice(0, 7);
+// Mois ouverts à la saisie. Un mois avec une date butoir est ouvert jusqu'à cette
+// date incluse, même s'il est plus proche que le premier mois ouvert ; sans date
+// butoir, il suit la règle générale (de open_from à open_to mois à l'avance).
+function openMonths(s, today = todayParis()) {
+  const current = today.slice(0, 7);
+  const deadlines = s.deadlines || {};
   const out = [];
-  for (let i = s.open_from; i <= s.open_to; i++) out.push(addMonths(current, i));
+  for (let i = 0; i <= s.open_to; i++) {
+    const m = addMonths(current, i);
+    if (deadlines[m] ? today <= deadlines[m] : i >= s.open_from) out.push(m);
+  }
   return out;
 }
 
@@ -71,6 +79,17 @@ function validateSettings(input) {
   if (!(s.max_per_month >= 1 && s.max_per_month <= 31)) return { error: 'Jours OFF par mois : entre 1 et 31' };
   if (!(s.max_consecutive >= 1 && s.max_consecutive <= 31)) return { error: 'Jours OFF à la suite : entre 1 et 31' };
   if (!s.types.length) return { error: 'Choisissez au moins un type de jour OFF' };
+  // Dates butoir : on oublie celles des mois déjà passés
+  const raw = input.deadlines && typeof input.deadlines === 'object' && !Array.isArray(input.deadlines) ? input.deadlines : {};
+  const current = todayParis().slice(0, 7);
+  s.deadlines = {};
+  for (const [m, d] of Object.entries(raw)) {
+    if (!d) continue;
+    if (!MONTH_RE.test(m) || !DAY_RE.test(String(d)) || Number(d.slice(8)) > daysInMonth(d.slice(0, 7))) return { error: 'Date butoir invalide' };
+    if (m < current) continue;
+    if (d > `${m}-${daysInMonth(m)}`) return { error: `La date butoir de ${monthLabel(m).toLowerCase()} doit tomber avant la fin de ce mois` };
+    s.deadlines[m] = d;
+  }
   return { settings: s };
 }
 

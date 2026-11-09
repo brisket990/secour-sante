@@ -12,6 +12,7 @@ const monthLabel = ym => { const [y, m] = ym.split('-').map(Number); return `${M
 const daysIn = ym => { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m, 0)).getUTCDate(); };
 const weekdayOf = day => new Date(day + 'T00:00:00Z').getUTCDay();
 const pad = n => String(n).padStart(2, '0');
+const longDate = day => `${Number(day.slice(8))} ${MONTHS_FR[+day.slice(5, 7) - 1].toLowerCase()} ${day.slice(0, 4)}`;
 const shiftMonth = (ym, n) => new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1)).toISOString().slice(0, 7);
 
 // ===== Agent =====
@@ -57,6 +58,10 @@ function renderDesiderata() {
   const countEl = document.getElementById('deCount');
   countEl.textContent = `${count} / ${max} jours OFF`;
   countEl.classList.toggle('full', count >= max);
+  const deadline = (de.settings.deadlines || {})[deMonth];
+  const dlEl = document.getElementById('deDeadline');
+  dlEl.classList.toggle('hidden', !deadline);
+  if (deadline) dlEl.innerHTML = `<i class="ph ph-hourglass-medium"></i> Saisie possible jusqu'au ${longDate(deadline)} inclus`;
 
   let html = '<span class="de-pad"></span>'.repeat(offset);
   for (let d = 1; d <= n; d++) {
@@ -233,13 +238,50 @@ async function exportPlanning(fmt) {
   }
 }
 
+// Dates butoir en cours d'édition (enregistrées avec les autres règles)
+let plDeadlines = {};
+
+function renderDeadlines() {
+  const list = document.getElementById('dlList');
+  const months = Object.keys(plDeadlines).sort();
+  const now = new Date();
+  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  list.innerHTML = months.map(m => `<li><span><strong>${monthLabel(m)}</strong> : jusqu'au ${longDate(plDeadlines[m])}${plDeadlines[m] < today ? ' <em class="dl-closed">fermé</em>' : ''}</span>
+    <button type="button" class="icon-btn" onclick="removeDeadline('${m}')" aria-label="Retirer la date butoir de ${monthLabel(m)}"><i class="ph ph-x"></i></button></li>`).join('');
+  // Mois proposés : du mois en cours au dernier mois ouvert
+  const current = today.slice(0, 7);
+  const last = Math.min(24, Math.max(0, Number(document.getElementById('setOpenTo').value) || 0));
+  const select = document.getElementById('dlMonth');
+  const keep = select.value;
+  select.innerHTML = Array.from({ length: last + 1 }, (_, i) => shiftMonth(current, i))
+    .map(m => `<option value="${m}">${monthLabel(m)}${plDeadlines[m] ? ' · réglé' : ''}</option>`).join('');
+  if ([...select.options].some(o => o.value === keep)) select.value = keep;
+}
+
+function addDeadline() {
+  const m = document.getElementById('dlMonth').value;
+  const d = document.getElementById('dlDate').value;
+  const err = document.getElementById('plSettingsError');
+  if (!m || !d) { err.textContent = 'Choisissez un mois et une date butoir.'; err.classList.remove('hidden'); return; }
+  if (d > `${m}-${pad(daysIn(m))}`) { err.textContent = `La date butoir de ${monthLabel(m).toLowerCase()} doit tomber avant la fin de ce mois.`; err.classList.remove('hidden'); return; }
+  err.classList.add('hidden');
+  plDeadlines[m] = d;
+  document.getElementById('dlDate').value = '';
+  renderDeadlines();
+}
+
+function removeDeadline(m) { delete plDeadlines[m]; renderDeadlines(); }
+
 async function loadPlanningSettings() {
   const { settings } = await api('/api/planning/settings');
+  plDeadlines = { ...(settings.deadlines || {}) };
   document.getElementById('setOpenFrom').value = settings.open_from;
   document.getElementById('setOpenTo').value = settings.open_to;
   document.getElementById('setMaxMonth').value = settings.max_per_month;
   document.getElementById('setMaxRun').value = settings.max_consecutive;
   document.querySelectorAll('input[name="setTypes"]').forEach(c => { c.checked = settings.types.includes(c.value); });
+  renderDeadlines();
+  document.getElementById('setOpenTo').oninput = renderDeadlines;
   document.getElementById('plSettingsError').classList.add('hidden');
   document.getElementById('plSettingsSuccess').classList.add('hidden');
 }
@@ -256,6 +298,7 @@ async function savePlanningSettings(e) {
       max_per_month: document.getElementById('setMaxMonth').value,
       max_consecutive: document.getElementById('setMaxRun').value,
       types: [...document.querySelectorAll('input[name="setTypes"]:checked')].map(c => c.value),
+      deadlines: plDeadlines,
     }) });
     ok.classList.remove('hidden');
   } catch (ex) {
